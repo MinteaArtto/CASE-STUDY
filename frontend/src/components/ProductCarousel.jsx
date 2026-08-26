@@ -1,51 +1,63 @@
-// src/components/ProductCarousel.jsx
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const PRODUCTS = [
-  { name: "Tomato", price: "$2.50", trend: "+4%", risk: "Low" },
-  { name: "Banana", price: "$1.20", trend: "-2%", risk: "High" },
-  { name: "Apple", price: "$3.00", trend: "+1%", risk: "Medium" },
-  { name: "Lettuce", price: "$1.80", trend: "+7%", risk: "Low" },
+  { name: "Avocado", emoji: "🥑", price: "₱50", change: "+1%" },
+  { name: "Banana", emoji: "🍌", price: "₱48", change: "+1%" },
+  { name: "Carrot", emoji: "🥕", price: "₱35", change: "-2%" },
+  { name: "Tomato", emoji: "🍅", price: "₱42", change: "+4%" },
+  { name: "Lettuce", emoji: "🥬", price: "₱30", change: "+3%" },
 ];
 
 export default function ProductCarousel() {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: "start",
+    slidesToScroll: 1,
+  });
 
   return (
-    <div className="relative">
-      <div className="overflow-hidden rounded-2xl" ref={emblaRef}>
-        <div className="flex">
+    <div className="relative flex items-center gap-3">
+      <button
+        onClick={() => emblaApi?.scrollPrev()}
+        aria-label="Previous"
+        className="shrink-0 p-2 rounded-full hover:bg-ink/5 transition-colors"
+      >
+        <ChevronLeft className="w-5 h-5 text-ink/60" />
+      </button>
+
+      <div className="overflow-hidden flex-1" ref={emblaRef}>
+        <div className="flex gap-4">
           {PRODUCTS.map((product) => (
             <div
               key={product.name}
-              className="flex-[0_0_100%] min-w-0 bg-white/70 p-6 border border-ink/10 rounded-2xl"
+              className="flex-[0_0_calc(33.333%-11px)] min-w-0 bg-cream-light/70 rounded-2xl p-6 text-center flex flex-col items-center"
             >
-              <h4 className="font-display font-bold text-xl">{product.name}</h4>
-              <p className="text-2xl font-bold mt-2">{product.price}</p>
-              <div className="flex gap-4 mt-3 text-sm">
-                <span className={product.trend.startsWith("+") ? "text-green-600" : "text-red-600"}>
-                  {product.trend}
-                </span>
-                <span className={product.risk === "High" ? "text-red-600 font-medium" : "text-ink/60"}>
-                  Risk: {product.risk}
-                </span>
-              </div>
+              <span className="text-5xl mb-3">{product.emoji}</span>
+              <h4 className="font-display font-bold">{product.name}</h4>
+              <p className="text-lg font-bold mt-1">
+                {product.price}
+                <span className="text-sm font-normal text-ink/50">/kg</span>
+              </p>
+              <span
+                className={
+                  "text-xs mt-1 " +
+                  (product.change.startsWith("+") ? "text-teal" : "text-red-500")
+                }
+              >
+                {product.change} this week
+              </span>
             </div>
           ))}
         </div>
       </div>
-      <button
-        onClick={() => emblaApi?.scrollPrev()}
-        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white transition-colors"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
+
       <button
         onClick={() => emblaApi?.scrollNext()}
-        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white transition-colors"
+        aria-label="Next"
+        className="shrink-0 p-2 rounded-full hover:bg-ink/5 transition-colors"
       >
-        <ChevronRight className="w-5 h-5" />
+        <ChevronRight className="w-5 h-5 text-ink/60" />
       </button>
     </div>
   );

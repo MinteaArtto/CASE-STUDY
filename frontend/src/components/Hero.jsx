@@ -1,14 +1,20 @@
 import { Search, Mic } from "lucide-react";
 import ProductCarousel from "./ProductCarousel";
 import HowItWorksCard from "./HowItWorksCard";
+import { Repeat2, ShieldHalf, Grid2x2, Sparkles } from "lucide-react";
 
-const BRANDS = ["Logoipsum", "Logoipsum", "Logoipsum", "logoipsum"];
+const BRANDS = [
+  { icon: Repeat2, label: "" },
+  { icon: ShieldHalf, label: "Logoipsum" },
+  { icon: Grid2x2, label: "" },
+  { icon: Sparkles, label: "Logoipsum" },
+];
 
 export default function Hero() {
   return (
     <section className="bg-linear-to-b from-cream to-cream-light">
       <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
-        <h1 className="font-display font-bold text-6xl md:text-8xl tracking-tight leading-none transform-[skewY(-1deg)]">
+        <h1 className="font-display font-bold text-6xl md:text-8xl tracking-tight leading-none">
           MAMAV
         </h1>
 
@@ -32,22 +38,29 @@ export default function Hero() {
           <Mic className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/40" />
         </div>
 
-        <div className="mt-14 grid md:grid-cols-[1.4fr_1fr] gap-10 items-center text-left">
+        <div className="mt-14 relative">
           <ProductCarousel />
-          <div className="flex justify-center md:justify-end">
+          {/* DESKTOP VERSION - shows on md screens and up */}
+          <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 translate-x-6">
             <HowItWorksCard />
           </div>
         </div>
+
+        {/* MOBILE VERSION - REMOVED */}
       </div>
 
       <div className="max-w-6xl mx-auto px-6 pb-20 text-center">
         <p className="text-sm text-ink/50 mb-6">Built with</p>
         <div className="flex flex-wrap items-center justify-center gap-10 opacity-50">
-          {BRANDS.map((brand, i) => (
-            <span key={i} className="font-display text-sm">
-              {brand}
+          {BRANDS.map(({ icon: Icon, label }, i) => (
+            <span key={i} className="flex items-center gap-2 font-display text-sm">
+              <Icon className="w-5 h-5" strokeWidth={1.75} />
+              {label}
             </span>
           ))}
+          <span className="border border-ink/40 rounded-full px-4 py-1 text-sm font-display">
+            logoipsum
+          </span>
         </div>
       </div>
     </section>

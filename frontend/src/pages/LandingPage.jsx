@@ -1,4 +1,4 @@
-import Navbar from "../components/Navbar";
+import Header from "../components/Header";
 import Hero from "../components/Hero";
 import ClassifySection from "../components/ClassifySection";
 import ActionCards from "../components/ActionCards";
@@ -7,13 +7,13 @@ import Footer from "../components/Footer";
 
 export default function LandingPage() {
   return (
-    <main>
-      <Navbar />
+    <>
+      <Header />
       <Hero />
       <ClassifySection />
       <ActionCards />
       <CTASection />
       <Footer />
-    </main>
+    </>
   );
 }

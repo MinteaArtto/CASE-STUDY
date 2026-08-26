@@ -31,18 +31,20 @@ export default function ActionCards() {
           seeing what to do with them.
         </p>
 
-        <div className="grid sm:grid-cols-3 gap-6 mt-12 text-left">
+        <div className="grid sm:grid-cols-3 gap-6 mt-12 text-center">
           {CARDS.map(({ title, desc, example }) => (
             <div
               key={title}
-              className="bg-cream-light/80 rounded-2xl p-6 border border-white/50 flex flex-col"
+              className="bg-cream-light/80 rounded-2xl p-6 border border-white/50 flex flex-col items-center"
             >
-              <AlertCircle className="w-6 h-6 mb-4" strokeWidth={1.75} />
+              <div className="w-10 h-10 rounded-full border border-ink/30 flex items-center justify-center mb-4">
+                <AlertCircle className="w-5 h-5" strokeWidth={1.75} />
+              </div>
               <h3 className="font-display font-bold text-sm">{title}</h3>
-              <p className="text-sm text-ink/60 mt-2 leading-relaxed flex-1">
+              <p className="text-sm text-ink/60 mt-2 leading-relaxed">
                 {desc}
               </p>
-              <p className="text-xs text-ink/50 mt-4 pt-4 border-t border-ink/10">
+              <p className="text-xs text-ink/50 mt-4 pt-4 border-t border-ink/10 w-full">
                 {example}
               </p>
             </div>
