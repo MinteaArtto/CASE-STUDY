@@ -13,7 +13,7 @@ const BRANDS = [
 export default function Hero() {
   return (
     <section className="bg-linear-to-b from-cream to-cream-light">
-      <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
+      <div className="max-w-6xl mx-auto px-6 pt-20 pb-30 text-center">
         <h1 className="font-display font-bold text-6xl md:text-8xl tracking-tight leading-none">
           MAMAV
         </h1>
@@ -49,7 +49,8 @@ export default function Hero() {
         {/* MOBILE VERSION - REMOVED */}
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 pb-20 text-center">
+      {/* BUILT WITH section — moved down with more padding-top */}
+      <div className="max-w-6xl mx-auto px-6 pb-20 pt-16 text-center">
         <p className="text-sm text-ink/50 mb-6">Built with</p>
         <div className="flex flex-wrap items-center justify-center gap-10 opacity-50">
           {BRANDS.map(({ icon: Icon, label }, i) => (

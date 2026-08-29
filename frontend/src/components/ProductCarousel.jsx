@@ -2,11 +2,11 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const PRODUCTS = [
-  { name: "Avocado", emoji: "🥑", price: "₱50", change: "+1%" },
-  { name: "Banana", emoji: "🍌", price: "₱48", change: "+1%" },
-  { name: "Carrot", emoji: "🥕", price: "₱35", change: "-2%" },
-  { name: "Tomato", emoji: "🍅", price: "₱42", change: "+4%" },
-  { name: "Lettuce", emoji: "🥬", price: "₱30", change: "+3%" },
+  { name: "Avocado", image: "/products/avocado.png", price: "₱50", change: "+1%" },
+  { name: "Banana", image: "/products/banana.png", price: "₱48", change: "+1%" },
+  { name: "Carrot", image: "/products/carrot.png", price: "₱35", change: "-2%" },
+  { name: "Tomato", image: "/products/tomato.png", price: "₱42", change: "+4%" },
+  { name: "Lettuce", image: "/products/lettuce.png", price: "₱30", change: "+3%" },
 ];
 
 export default function ProductCarousel() {
@@ -33,7 +33,11 @@ export default function ProductCarousel() {
               key={product.name}
               className="flex-[0_0_calc(33.333%-11px)] min-w-0 bg-cream-light/70 rounded-2xl p-6 text-center flex flex-col items-center"
             >
-              <span className="text-5xl mb-3">{product.emoji}</span>
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-16 h-16 object-contain mb-3"
+              />
               <h4 className="font-display font-bold">{product.name}</h4>
               <p className="text-lg font-bold mt-1">
                 {product.price}
