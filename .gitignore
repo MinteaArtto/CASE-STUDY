@@ -10,3 +10,11 @@
 
 # IDE
 .vscode/
+
+# Python virtual environment
+ml/.venv/
+backend/uploads/
+
+# Python cache
+__pycache__/
+*.pyc
