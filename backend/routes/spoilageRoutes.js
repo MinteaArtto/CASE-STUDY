@@ -3,6 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
+const axios = require("axios");
 
 const router = express.Router();
 
@@ -35,6 +36,71 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
 });
+
+// ============================================================
+// NYCKEL AUTHENTICATION
+// ============================================================
+
+async function getNyckelAccessToken() {
+  const response = await axios.post(
+    "https://www.nyckel.com/connect/token",
+    new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: process.env.NYCKEL_CLIENT_ID,
+      client_secret: process.env.NYCKEL_CLIENT_SECRET,
+    }),
+    {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    },
+  );
+
+  return response.data.access_token;
+}
+
+// ============================================================
+// NYCKEL SPOILAGE PREDICTION
+// ============================================================
+
+async function predictSpoilageWithNyckel(imagePath) {
+  // Get Nyckel access token
+  const accessToken = await getNyckelAccessToken();
+
+  // Read image
+  const imageBuffer = fs.readFileSync(imagePath);
+
+  // Convert image to Base64 data URI
+  const base64Image = imageBuffer.toString("base64");
+
+  const extension = path.extname(imagePath).toLowerCase();
+
+  let mimeType = "image/jpeg";
+
+  if (extension === ".png") {
+    mimeType = "image/png";
+  } else if (extension === ".webp") {
+    mimeType = "image/webp";
+  }
+
+  const dataUri = `data:${mimeType};base64,${base64Image}`;
+
+  // Call Nyckel
+  const response = await axios.post(
+    `https://www.nyckel.com/v1/functions/${process.env.NYCKEL_FUNCTION_ID}/invoke`,
+    {
+      data: dataUri,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  return response.data;
+}
 
 // ============================================================
 // POST /api/spoilage/analyze
@@ -102,22 +168,22 @@ router.post("/analyze", upload.single("image"), (req, res) => {
   // PYTHON FINISHED
   // ========================================================
 
-  python.on("close", (code) => {
+  python.on("close", async (code) => {
     console.log("Python process finished.");
     console.log("Exit code:", code);
 
-    // Delete temporary image
-    fs.unlink(req.file.path, (err) => {
-      if (err) {
-        console.error("Could not delete temporary image:", err.message);
-      } else {
-        console.log("Temporary image deleted.");
-      }
-    });
+    // ======================================================
+    // PYTHON FAILED
+    // ======================================================
 
-    // Python failed
     if (code !== 0) {
       console.error("Python error:", errorOutput);
+
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Could not delete temporary image:", err.message);
+        }
+      });
 
       return res.status(500).json({
         success: false,
@@ -129,18 +195,20 @@ router.post("/analyze", upload.single("image"), (req, res) => {
     console.log("Python output:", output);
 
     // ======================================================
-    // EXTRACT PREDICTION
+    // EXTRACT PYTORCH PREDICTION
     // ======================================================
 
     const predictionMatch = output.match(/Prediction:\s*(Fresh|Rotten)/i);
 
     // ======================================================
-    // EXTRACT CONFIDENCE
+    // EXTRACT PYTORCH CONFIDENCE
     // ======================================================
 
     const confidenceMatch = output.match(/Confidence:\s*([0-9.]+)/i);
 
     if (!predictionMatch || !confidenceMatch) {
+      fs.unlink(req.file.path, () => {});
+
       return res.status(500).json({
         success: false,
         message: "Could not understand the ML prediction.",
@@ -149,20 +217,86 @@ router.post("/analyze", upload.single("image"), (req, res) => {
     }
 
     const prediction = predictionMatch[1];
-
     const confidence = parseFloat(confidenceMatch[1]);
 
+    console.log("PyTorch prediction:", prediction);
+    console.log("PyTorch confidence:", confidence);
+
     // ======================================================
-    // SEND RESULT TO FRONTEND
+    // FRESH → DO NOT CALL NYCKEL
     // ======================================================
 
-    return res.json({
-      success: true,
+    if (prediction.toLowerCase() === "fresh") {
+      console.log("Food is fresh. Nyckel will NOT be called.");
 
-      prediction: prediction,
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Could not delete temporary image:", err.message);
+        } else {
+          console.log("Temporary image deleted.");
+        }
+      });
 
-      confidence: confidence,
-    });
+      return res.json({
+        success: true,
+        prediction: prediction,
+        confidence: confidence,
+        spoilageType: null,
+        spoilageConfidence: null,
+      });
+    }
+
+    // ======================================================
+    // ROTTEN → CALL NYCKEL
+    // ======================================================
+
+    console.log("Food is rotten.");
+    console.log("Calling Nyckel for spoilage identification...");
+
+    try {
+      const nyckelResult = await predictSpoilageWithNyckel(req.file.path);
+
+      console.log("Nyckel result:", nyckelResult);
+
+      // Delete temporary image
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Could not delete temporary image:", err.message);
+        } else {
+          console.log("Temporary image deleted.");
+        }
+      });
+
+      // ====================================================
+      // RETURN COMBINED RESULT
+      // ====================================================
+
+      return res.json({
+        success: true,
+
+        prediction: prediction,
+
+        confidence: confidence,
+
+        spoilageType: nyckelResult.labelName || nyckelResult.label || null,
+
+        spoilageConfidence: nyckelResult.confidence || null,
+      });
+    } catch (nyckelError) {
+      console.error(
+        "Nyckel prediction failed:",
+        nyckelError.response?.data || nyckelError.message,
+      );
+
+      // Delete temporary image
+      fs.unlink(req.file.path, () => {});
+
+      return res.status(500).json({
+        success: false,
+        message: "Nyckel spoilage prediction failed.",
+        error: nyckelError.response?.data || nyckelError.message,
+      });
+    }
   });
 });
 
