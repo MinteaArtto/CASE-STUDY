@@ -29,6 +29,10 @@ OUTPUT_FILE = os.path.join(
 
 COMMODITY_MAP = {
 
+    # ========================================================
+    # VEGETABLES / ROOT CROPS / AROMATICS
+    # ========================================================
+
     "Tomatoes":
         "Tomato",
 
@@ -61,8 +65,21 @@ COMMODITY_MAP = {
 
     "Garlic":
         "Garlic",
-}
 
+
+    # ========================================================
+    # FRUITS
+    # ========================================================
+
+    "Bananas (lakatan)":
+        "Banana (Lakatan)",
+
+    "Mangoes (carabao)":
+        "Mango (Carabao)",
+
+    "Calamansi":
+        "Calamansi",
+}
 
 # ============================================================
 # LOAD DATA
