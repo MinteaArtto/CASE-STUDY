@@ -18,6 +18,16 @@ ml/price_models/
 ml/wfp_price_models/
 
 # ==========================================
+# PRICE DATA ANALYSIS / UTILITY SCRIPTS
+# ==========================================
+
+price_data/analyze_hybrid_v2.py
+price_data/analyze_prices.py
+price_data/check_weekly_coverage.py
+price_data/download_pdfs.py
+price_data/inspect_commodities.py
+
+# ==========================================
 # OCR TEST SCRIPTS
 # ==========================================
 
@@ -47,6 +57,8 @@ price_data/check_failed_pdfs.py
 
 # Python virtual environment
 ml/.venv/
+
+# Uploaded temporary images
 backend/uploads/
 
 # Python cache
