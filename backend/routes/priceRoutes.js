@@ -139,6 +139,140 @@ function filterProductRows(rows, product) {
 }
 
 // ============================================================
+// PRICE DECISION-SUPPORT SYSTEM
+//
+// Converts the model forecast into:
+// 1. Percentage change
+// 2. Trend interpretation
+// 3. Pricing suggestion
+// 4. Inventory recommendation
+//
+// Thresholds:
+//
+// >= +10%     Significant Increase
+// +3% to 10%  Increase
+// -3% to +3%  Stable
+// -10% to -3% Decrease
+// <= -10%     Significant Decrease
+// ============================================================
+
+function getPriceDecisionSupport(latestPrice, forecastPrice) {
+  // --------------------------------------------------------
+  // VALIDATE PRICES
+  // --------------------------------------------------------
+
+  if (latestPrice === null || forecastPrice === null || latestPrice <= 0) {
+    return {
+      percentageChange: null,
+
+      trend: "unknown",
+
+      pricingSuggestion:
+        "Insufficient price information is available to provide a pricing suggestion.",
+
+      inventoryRecommendation:
+        "Insufficient price information is available to provide an inventory recommendation.",
+    };
+  }
+
+  // --------------------------------------------------------
+  // CALCULATE PERCENTAGE CHANGE
+  // --------------------------------------------------------
+
+  const percentageChange = ((forecastPrice - latestPrice) / latestPrice) * 100;
+
+  const roundedChange = Math.round(percentageChange * 100) / 100;
+
+  // ========================================================
+  // SIGNIFICANT PRICE INCREASE
+  // ========================================================
+
+  if (percentageChange >= 10) {
+    return {
+      percentageChange: roundedChange,
+
+      trend: "significant increase",
+
+      pricingSuggestion:
+        "The forecast indicates a significant price increase. Monitor market conditions and consider gradual pricing adjustments while remaining competitive.",
+
+      inventoryRecommendation:
+        "Maintain adequate inventory to respond to the expected price increase, but avoid excessive stocking because the product is perishable. Continue monitoring product condition and market prices.",
+    };
+  }
+
+  // ========================================================
+  // MODERATE PRICE INCREASE
+  // ========================================================
+
+  if (percentageChange >= 3) {
+    return {
+      percentageChange: roundedChange,
+
+      trend: "increase",
+
+      pricingSuggestion:
+        "The forecast indicates a moderate price increase. Monitor market prices and consider adjusting the selling price gradually if the market trend continues.",
+
+      inventoryRecommendation:
+        "Maintain normal inventory levels and monitor the expected price increase before making major stocking decisions.",
+    };
+  }
+
+  // ========================================================
+  // SIGNIFICANT PRICE DECREASE
+  // ========================================================
+
+  if (percentageChange <= -10) {
+    return {
+      percentageChange: roundedChange,
+
+      trend: "significant decrease",
+
+      pricingSuggestion:
+        "The forecast indicates a significant price decrease. Consider competitive pricing strategies to encourage faster inventory turnover.",
+
+      inventoryRecommendation:
+        "Minimize unnecessary restocking and prioritize moving existing inventory to reduce exposure to the expected price decline.",
+    };
+  }
+
+  // ========================================================
+  // MODERATE PRICE DECREASE
+  // ========================================================
+
+  if (percentageChange <= -3) {
+    return {
+      percentageChange: roundedChange,
+
+      trend: "decrease",
+
+      pricingSuggestion:
+        "The forecast indicates a moderate price decrease. Consider maintaining competitive prices and closely monitor market changes.",
+
+      inventoryRecommendation:
+        "Prioritize selling existing inventory and consider reducing additional purchases until market prices stabilize.",
+    };
+  }
+
+  // ========================================================
+  // STABLE PRICE
+  // ========================================================
+
+  return {
+    percentageChange: roundedChange,
+
+    trend: "stable",
+
+    pricingSuggestion:
+      "The forecast indicates relatively stable prices. Maintain normal pricing while continuing to monitor market conditions.",
+
+    inventoryRecommendation:
+      "Maintain normal inventory levels because no major price movement is currently forecasted.",
+  };
+}
+
+// ============================================================
 // 1. GET AVAILABLE PRODUCTS
 //
 // GET:
@@ -212,7 +346,9 @@ router.get("/products", async (req, res) => {
 
     return res.json({
       success: true,
+
       count: products.length,
+
       products,
     });
   } catch (error) {
@@ -220,7 +356,9 @@ router.get("/products", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+
       message: "Failed to retrieve products.",
+
       error: error.message,
     });
   }
@@ -242,6 +380,12 @@ router.get("/products", async (req, res) => {
 // → WFP / RiceLytics
 // → 1-month forecast
 // → 3-month forecast
+//
+// Also returns:
+// → percentage change
+// → trend
+// → pricing suggestion
+// → inventory recommendation
 // ============================================================
 
 router.get("/forecast", async (req, res) => {
@@ -255,7 +399,9 @@ router.get("/forecast", async (req, res) => {
     if (!product) {
       return res.status(400).json({
         success: false,
+
         message: "Product query parameter is required.",
+
         example: "/api/prices/forecast?product=Tomato",
       });
     }
@@ -266,6 +412,7 @@ router.get("/forecast", async (req, res) => {
 
     const [daRows, wfpRows] = await Promise.all([
       readCSV(DA_FORECAST_FILE),
+
       readCSV(WFP_FORECAST_FILE),
     ]);
 
@@ -284,6 +431,7 @@ router.get("/forecast", async (req, res) => {
     if (!daProduct && !wfpProduct) {
       return res.status(404).json({
         success: false,
+
         message: `No forecast data found for ${product}.`,
       });
     }
@@ -295,21 +443,43 @@ router.get("/forecast", async (req, res) => {
     let weekly = null;
 
     if (daProduct) {
+      const latestWeeklyPrice = toNumber(daProduct.current_price);
+
+      const oneWeekPrice = toNumber(daProduct.one_week_forecast);
+
+      // Generate decision support
+      const oneWeekDecision = getPriceDecisionSupport(
+        latestWeeklyPrice,
+        oneWeekPrice,
+      );
+
       weekly = {
         source: "Department of Agriculture",
 
         frequency: "weekly",
 
-        latestRecordedPrice: toNumber(daProduct.current_price),
+        latestRecordedPrice: latestWeeklyPrice,
 
         latestDate: daProduct.latest_date || null,
 
         oneWeek: {
           date: daProduct.one_week_date || null,
 
-          price: toNumber(daProduct.one_week_forecast),
+          price: oneWeekPrice,
 
           direction: daProduct.one_week_direction || null,
+
+          // ----------------------------------------------
+          // SOP 5 DECISION-SUPPORT OUTPUT
+          // ----------------------------------------------
+
+          percentageChange: oneWeekDecision.percentageChange,
+
+          trend: oneWeekDecision.trend,
+
+          pricingSuggestion: oneWeekDecision.pricingSuggestion,
+
+          inventoryRecommendation: oneWeekDecision.inventoryRecommendation,
         },
       };
     }
@@ -321,29 +491,77 @@ router.get("/forecast", async (req, res) => {
     let monthly = null;
 
     if (wfpProduct) {
+      const latestMonthlyPrice = toNumber(wfpProduct.latest_recorded_price);
+
+      const oneMonthPrice = toNumber(wfpProduct.one_month_forecast);
+
+      const threeMonthPrice = toNumber(wfpProduct.three_month_forecast);
+
+      // ----------------------------------------------------
+      // 1-MONTH DECISION SUPPORT
+      // ----------------------------------------------------
+
+      const oneMonthDecision = getPriceDecisionSupport(
+        latestMonthlyPrice,
+        oneMonthPrice,
+      );
+
+      // ----------------------------------------------------
+      // 3-MONTH DECISION SUPPORT
+      // ----------------------------------------------------
+
+      const threeMonthDecision = getPriceDecisionSupport(
+        latestMonthlyPrice,
+        threeMonthPrice,
+      );
+
       monthly = {
         source: "WFP / RiceLytics",
 
         frequency: "monthly",
 
-        latestRecordedPrice: toNumber(wfpProduct.latest_recorded_price),
+        latestRecordedPrice: latestMonthlyPrice,
 
         latestMonth: wfpProduct.latest_month || null,
+
+        // ==================================================
+        // 1-MONTH FORECAST
+        // ==================================================
 
         oneMonth: {
           period: wfpProduct.one_month_period || null,
 
-          price: toNumber(wfpProduct.one_month_forecast),
+          price: oneMonthPrice,
 
           direction: wfpProduct.one_month_direction || null,
+
+          percentageChange: oneMonthDecision.percentageChange,
+
+          trend: oneMonthDecision.trend,
+
+          pricingSuggestion: oneMonthDecision.pricingSuggestion,
+
+          inventoryRecommendation: oneMonthDecision.inventoryRecommendation,
         },
+
+        // ==================================================
+        // 3-MONTH FORECAST
+        // ==================================================
 
         threeMonths: {
           period: wfpProduct.three_month_period || null,
 
-          price: toNumber(wfpProduct.three_month_forecast),
+          price: threeMonthPrice,
 
           direction: wfpProduct.three_month_direction || null,
+
+          percentageChange: threeMonthDecision.percentageChange,
+
+          trend: threeMonthDecision.trend,
+
+          pricingSuggestion: threeMonthDecision.pricingSuggestion,
+
+          inventoryRecommendation: threeMonthDecision.inventoryRecommendation,
         },
       };
     }
@@ -366,7 +584,9 @@ router.get("/forecast", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+
       message: "Failed to retrieve price forecast.",
+
       error: error.message,
     });
   }
@@ -395,7 +615,9 @@ router.get("/history", async (req, res) => {
     if (!product) {
       return res.status(400).json({
         success: false,
+
         message: "Product query parameter is required.",
+
         example: "/api/prices/history?product=Tomato&type=monthly",
       });
     }
@@ -407,6 +629,7 @@ router.get("/history", async (req, res) => {
     if (type !== "weekly" && type !== "monthly") {
       return res.status(400).json({
         success: false,
+
         message: "Type must be either weekly or monthly.",
       });
     }
@@ -442,6 +665,7 @@ router.get("/history", async (req, res) => {
       if (history.length === 0) {
         return res.status(404).json({
           success: false,
+
           message: `No weekly historical data found for ${product}.`,
         });
       }
@@ -501,6 +725,7 @@ router.get("/history", async (req, res) => {
     if (history.length === 0) {
       return res.status(404).json({
         success: false,
+
         message: `No monthly historical data found for ${product}.`,
       });
     }
@@ -531,7 +756,9 @@ router.get("/history", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+
       message: "Failed to retrieve price history.",
+
       error: error.message,
     });
   }
