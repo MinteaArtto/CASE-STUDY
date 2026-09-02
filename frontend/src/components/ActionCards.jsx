@@ -3,39 +3,38 @@ import { AlertCircle } from "lucide-react";
 const CARDS = [
   {
     title: "Pricing guidance",
-    desc: "Suggests when to hold or sell a product based on where its price is forecast to go.",
-    example: "Tomato is forecast to rise 4% — consider holding 1–2 days.",
+    desc: "Use forecasted market prices to support decisions on when and how to price selected perishable goods.",
+    example: "Forecast indicates a potential price increase — consider adjusting your selling strategy.",
   },
   {
     title: "Inventory prioritization",
-    desc: "Flags which batch to move first based on its spoilage risk, not just its age.",
-    example: "Banana batch flagged AT RISK — move to front of sale line.",
+    desc: "Identify products that may require earlier selling or prioritization based on their spoilage classification.",
+    example: "Product classified as higher spoilage risk — prioritize for earlier sale or handling.",
   },
   {
     title: "Spoilage alerts",
-    desc: "Surfaces batches classified at risk so they don't get missed in a busy inventory.",
-    example: "Tomato batch classified AT RISK — markdown or sell today.",
+    desc: "Highlight products identified as being at risk of spoilage so appropriate action can be considered.",
+    example: "Spoilage risk detected — consider markdown, sale, or appropriate handling.",
   },
 ];
 
 export default function ActionCards() {
   return (
-    <section className="bg-mint px-6 py-24 text-center">
+    <section className="bg-linear-to-b from-mint to-white px-6 py-24 text-center">
       <div className="max-w-4xl mx-auto">
         <h2 className="font-display font-bold text-3xl md:text-4xl tracking-wide">
-          WHAT SHOULD YOU DO WITH THIS?
+          WHAT SHOULD YOU DO NEXT?
         </h2>
         <p className="text-ink/70 mt-4 max-w-xl mx-auto leading-relaxed">
-          MamaV turns every price forecast and spoilage reading into a plain,
-          actionable next step — so you're not just seeing numbers, you're
-          seeing what to do with them.
+          MamaV translates forecasting and spoilage-classification results
+          into actionable decision-support outputs.
         </p>
 
         <div className="grid sm:grid-cols-3 gap-6 mt-12 text-center">
           {CARDS.map(({ title, desc, example }) => (
             <div
               key={title}
-              className="bg-cream-light/80 rounded-2xl p-6 border border-white/50 flex flex-col items-center"
+              className="bg-white/90 rounded-2xl p-6 border border-white/50 flex flex-col items-center"
             >
               <div className="w-10 h-10 rounded-full border border-ink/30 flex items-center justify-center mb-4">
                 <AlertCircle className="w-5 h-5" strokeWidth={1.75} />

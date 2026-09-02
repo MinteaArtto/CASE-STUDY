@@ -5,27 +5,27 @@ import { Repeat2, ShieldHalf, Grid2x2, Sparkles } from "lucide-react";
 
 const BRANDS = [
   { icon: Repeat2, label: "" },
-  { icon: ShieldHalf, label: "Logoipsum" },
+  { icon: ShieldHalf, label: "Regression Model" },
   { icon: Grid2x2, label: "" },
-  { icon: Sparkles, label: "Logoipsum" },
+  { icon: Sparkles, label: "Decision Tree" },
 ];
 
 export default function Hero() {
   return (
     <section className="bg-linear-to-b from-cream to-cream-light">
-      <div className="max-w-6xl mx-auto px-6 pt-20 pb-30 text-center">
+      <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
         <h1 className="font-display font-bold text-6xl md:text-8xl tracking-tight leading-none">
           MAMAV
         </h1>
 
         <p className="max-w-2xl mx-auto mt-8 text-ink/70 leading-relaxed">
-          MamaV forecasts market prices and classifies spoilage risk for
-          perishable goods, using regression and decision tree models, so
-          farmers, vendors, and consumers can make sense of their next move.
+          MaMaV helps users understand the market price and condition of
+          perishable goods through predictive analytics and spoilage
+          classification.
         </p>
 
         <h2 className="font-display font-bold text-2xl mt-16 mb-6">
-          today's current market trend
+          current market trend
         </h2>
 
         <div className="max-w-md mx-auto relative">
@@ -49,8 +49,7 @@ export default function Hero() {
         {/* MOBILE VERSION - REMOVED */}
       </div>
 
-      {/* BUILT WITH section — moved down with more padding-top */}
-      <div className="max-w-6xl mx-auto px-6 pb-20 pt-16 text-center">
+      <div className="max-w-6xl mx-auto px-6 pb-20 text-center">
         <p className="text-sm text-ink/50 mb-6">Built with</p>
         <div className="flex flex-wrap items-center justify-center gap-10 opacity-50">
           {BRANDS.map(({ icon: Icon, label }, i) => (
@@ -60,7 +59,7 @@ export default function Hero() {
             </span>
           ))}
           <span className="border border-ink/40 rounded-full px-4 py-1 text-sm font-display">
-            logoipsum
+            Nyckel API
           </span>
         </div>
       </div>
