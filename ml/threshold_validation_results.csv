@@ -1,0 +1,31 @@
+filename,actual,prediction,confidence,correct
+bell-peppers-1200x800-1.jpg,Fresh,Fresh,0.9902,True
+Carabao_mangoes_(Philippines).jpg,Fresh,Fresh,0.995,True
+carrot.jpg,Fresh,Fresh,0.9582,True
+images (1).jpg,Fresh,Fresh,0.9726,True
+images (2).jpg,Fresh,Fresh,0.9943,True
+images (3).jpg,Fresh,Fresh,0.9976,True
+Lemon0.jpg,Fresh,Fresh,0.9992,True
+Onion-Red.jpg,Fresh,Fresh,0.9945,True
+ripe-apple-royalty-free-image-1659454396.jpg,Fresh,Fresh,0.9873,True
+Tomato_je.jpg,Fresh,Fresh,0.9712,True
+cucumber-mold-rotten-isolated-on-260nw-1635379816.jpg,Rotten,Rotten,0.991,True
+hero-image.fill.size_1248x702.v1699835776.jpg,Rotten,Rotten,0.9968,True
+how-rotten-is-too-rotten-for-banana-bread-v0-vzg6ugcetm2d1.jpg,Rotten,Rotten,0.952,True
+images.jpg,Rotten,Rotten,0.9999,True
+istockphoto-1301198272-612x612.jpg,Rotten,Rotten,0.9933,True
+istockphoto-139403481-612x612.jpg,Rotten,Rotten,0.9984,True
+process-spoiling-fruits-rotten-pear-260nw-2650565093.jpg,Rotten,Rotten,0.9995,True
+rotten-carrots-spoiled-moldy-vegetable-waste-wasted-food-close-up-sweaty-mouldy-rotting-vegetables-135710964.jpg,Rotten,Rotten,0.6818,True
+rotten-tomato-spoiled-tomatoes-free-photo.jpg,Rotten,Rotten,0.9996,True
+rotting-cracked-pumpkin-dried-stem-single-rotten-isolated-white-background-330335396.jpg,Rotten,Rotten,0.9992,True
+14xp-postcard-mediumSquareAt3X.jpg,Unsupported,Fresh,0.8022,
+faergklar-mug-lilac__1397580_pe967645_s5.jpg,Unsupported,Fresh,0.5059,
+HP-15-6-Ryzen-5-8GB-256GB-Laptop-Rose-Gold_36809cf3-480b-47a5-94f0-e1d5e70c58c0_3.fcc0d6494b0e279a13c32c80c28abfa3.jpg,Unsupported,Fresh,0.6292,
+images (4).jpg,Unsupported,Fresh,0.8745,
+images (5).jpg,Unsupported,Fresh,0.5644,
+Jeans.jpg,Unsupported,Fresh,0.7236,
+Matches.jpg,Unsupported,Fresh,0.9999,
+Soup_Spoon.jpg,Unsupported,Fresh,0.7914,
+Water.jpg,Unsupported,Rotten,0.5623,
+Wholesale-Only-Original-Global-4G-LTE-6-75inch-Mobile-Smart-Phone-Mtk-Octa-Core-Android-Smart-Phone.jpg,Unsupported,Rotten,0.6122,

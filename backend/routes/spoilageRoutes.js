@@ -8,6 +8,21 @@ const axios = require("axios");
 const router = express.Router();
 
 // ============================================================
+// CONFIDENCE THRESHOLD
+// ============================================================
+//
+// Based on the external validation test:
+// Predictions below 90% are classified as "Uncertain".
+//
+// IMPORTANT:
+// This threshold is for LOW-CONFIDENCE predictions.
+// It is NOT a detector for non-produce images.
+//
+// ============================================================
+
+const CONFIDENCE_THRESHOLD = 0.9;
+
+// ============================================================
 // UPLOAD FOLDER
 // ============================================================
 
@@ -70,7 +85,7 @@ async function predictSpoilageWithNyckel(imagePath) {
   // Read image
   const imageBuffer = fs.readFileSync(imagePath);
 
-  // Convert image to Base64 data URI
+  // Convert image to Base64
   const base64Image = imageBuffer.toString("base64");
 
   const extension = path.extname(imagePath).toLowerCase();
@@ -108,6 +123,14 @@ async function predictSpoilageWithNyckel(imagePath) {
 
 function getRecommendation(prediction, spoilageType) {
   // ========================================================
+  // UNCERTAIN RESULT
+  // ========================================================
+
+  if (prediction?.toLowerCase() === "uncertain") {
+    return "The classification confidence is below the required threshold. Manual inspection is recommended, or upload a clearer image of a supported perishable product.";
+  }
+
+  // ========================================================
   // FRESH PRODUCT
   // ========================================================
 
@@ -123,7 +146,7 @@ function getRecommendation(prediction, spoilageType) {
     return "Inspect the product before making an inventory decision.";
   }
 
-  // Convert Nyckel label to lowercase for easier comparison
+  // Convert Nyckel label to lowercase
   const type = spoilageType?.toLowerCase() || "";
 
   // ========================================================
@@ -181,8 +204,9 @@ function getRecommendation(prediction, spoilageType) {
 
   // ========================================================
   // FOUL ODOR / SMELL
-  // These require manual verification because an image
-  // cannot directly confirm odor.
+  //
+  // Image analysis cannot directly confirm odor.
+  // Manual verification is required.
   // ========================================================
 
   if (type.includes("foul odor") || type === "smell") {
@@ -365,13 +389,62 @@ router.post("/analyze", upload.single("image"), (req, res) => {
     console.log("PyTorch confidence:", confidence);
 
     // ======================================================
+    // CONFIDENCE THRESHOLD
+    // ======================================================
+    //
+    // Below 90%:
+    // → Uncertain
+    // → Do NOT call Nyckel
+    // → Recommend manual inspection
+    //
+    // ======================================================
+
+    if (confidence < CONFIDENCE_THRESHOLD) {
+      console.log("Prediction is below confidence threshold.");
+
+      console.log("Threshold:", CONFIDENCE_THRESHOLD);
+
+      console.log("Confidence:", confidence);
+
+      const recommendation = getRecommendation("Uncertain", null);
+
+      // Delete temporary image
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Could not delete temporary image:", err.message);
+        } else {
+          console.log("Temporary image deleted.");
+        }
+      });
+
+      return res.json({
+        success: true,
+
+        // Final decision shown to user
+        prediction: "Uncertain",
+
+        // Original PyTorch output
+        originalPrediction: prediction,
+
+        confidence: confidence,
+
+        confidenceThreshold: CONFIDENCE_THRESHOLD,
+
+        spoilageType: null,
+
+        spoilageConfidence: null,
+
+        recommendation: recommendation,
+      });
+    }
+
+    // ======================================================
     // FRESH → DO NOT CALL NYCKEL
     // ======================================================
 
     if (prediction.toLowerCase() === "fresh") {
       console.log("Food is fresh. Nyckel will NOT be called.");
 
-      // Generate fresh recommendation
       const recommendation = getRecommendation(prediction, null);
 
       console.log("Recommendation:", recommendation);
@@ -391,6 +464,8 @@ router.post("/analyze", upload.single("image"), (req, res) => {
         prediction: prediction,
 
         confidence: confidence,
+
+        confidenceThreshold: CONFIDENCE_THRESHOLD,
 
         spoilageType: null,
 
@@ -461,6 +536,8 @@ router.post("/analyze", upload.single("image"), (req, res) => {
 
         confidence: confidence,
 
+        confidenceThreshold: CONFIDENCE_THRESHOLD,
+
         // Nyckel result
         spoilageType: spoilageType,
 
@@ -475,19 +552,14 @@ router.post("/analyze", upload.single("image"), (req, res) => {
         nyckelError.response?.data || nyckelError.message,
       );
 
-      // ====================================================
-      // DELETE TEMPORARY IMAGE
-      // ====================================================
-
+      // Delete temporary image
       fs.unlink(req.file.path, () => {});
-
-      // ====================================================
-      // NYCKEL ERROR
-      // ====================================================
 
       return res.status(500).json({
         success: false,
+
         message: "Nyckel spoilage prediction failed.",
+
         error: nyckelError.response?.data || nyckelError.message,
       });
     }

@@ -38,6 +38,9 @@ price_data/test_table_ocr.py
 price_data/test_pdf.py
 price_data/check_failed_pdfs.py
 
+# Threshold validation images
+ml/validation_images/
+
 # ==========================================
 # GENERAL
 # ==========================================
