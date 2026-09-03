@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const spoilageRoutes = require("./routes/spoilageRoutes");
+const priceRoutes = require("./routes/priceRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +15,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use("/api/spoilage", spoilageRoutes);
+app.use("/api/prices", priceRoutes);
 
 // Test route - just to check server is running
 app.get("/", (req, res) => {
