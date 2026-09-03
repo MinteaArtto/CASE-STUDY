@@ -48,7 +48,7 @@ export default function Header() {
             <Link
               key={label}
               to={to}
-              className="hover:text-ink transition-colors"
+              className="hover:text-ink transition-colors font-display"
             >
               {label}
             </Link>

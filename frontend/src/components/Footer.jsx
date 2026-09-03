@@ -29,6 +29,8 @@ const SOCIALS = [
   },
 ];
 
+import { Link } from "react-router-dom";
+
 const COLUMNS = [
   { heading: "Features", links: ["Forecast", "Classifier", "Recommendation"] },
   { heading: "About", links: ["Methodology", "Objectives", "Our team"] },
@@ -63,14 +65,29 @@ export default function Footer() {
           <div key={col.heading}>
             <h4 className="font-display font-bold text-sm mb-3">{col.heading}</h4>
             <ul className="space-y-2 text-sm text-ink/60">
-              {col.links.map((link) => (
-                <li
-                  key={link}
-                  className="hover:text-ink transition-colors cursor-pointer"
-                >
-                  {link}
-                </li>
-              ))}
+              {col.links.map((link) => {
+                // map some known link labels to routes
+                const to =
+                  link === "Forecast"
+                    ? "/forecast"
+                    : link === "Classifier"
+                    ? "/classifier"
+                    : link === "Recommendation"
+                    ? "/recommendation"
+                    : null;
+
+                return (
+                  <li key={link} className="hover:text-ink transition-colors">
+                    {to ? (
+                      <Link to={to} className="text-sm text-ink/60">
+                        {link}
+                      </Link>
+                    ) : (
+                      <span className="text-sm text-ink/60">{link}</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
