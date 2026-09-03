@@ -50,6 +50,7 @@ POPPLER_PATH = (
 # ============================================================
 
 TARGET_COMMODITIES = [
+    # Existing vegetables / aromatics
     "Ampalaya",
     "Sitao",
     "Pechay (Native)",
@@ -69,6 +70,16 @@ TARGET_COMMODITIES = [
     "Garlic (Imported)",
     "Garlic (Native)",
     "Ginger",
+
+    # Fruits found consistently in the DA weekly PDFs
+    "Banana (Lakatan)",
+    "Banana (Latundan)",
+    "Banana (Saba)",
+    "Mango (Carabao)",
+    "Papaya",
+    "Calamansi",
+    "Avocado",
+    "Watermelon",
 ]
 
 
@@ -198,6 +209,45 @@ def match_target(ocr_text):
 
     if "ginger" in text:
         return "Ginger", 1.0
+
+    # --------------------------------------------------------
+    # FRUITS
+    #
+    # DA labels observed in the weekly PDFs include:
+    # Banana (Lakatan), Banana (Latundan), Banana (Saba),
+    # Mango (Carabao), Papaya / Papaya Solo,
+    # Calamansi, Avocado, and Watermelon.
+    # --------------------------------------------------------
+
+    # Banana varieties are kept separate because the DA
+    # reports separate weekly prices for each variety.
+    if "lakatan" in text:
+        return "Banana (Lakatan)", 1.0
+
+    if "latundan" in text:
+        return "Banana (Latundan)", 1.0
+
+    if "banana" in text and "saba" in text:
+        return "Banana (Saba)", 1.0
+
+    # All DA mango rows found in the inspected PDFs are
+    # Carabao mango rows, sometimes with the word "Ripe".
+    if "mango" in text:
+        return "Mango (Carabao)", 1.0
+
+    # Normalize all Papaya / Papaya Solo / Solo Variety
+    # descriptions into one Papaya commodity.
+    if "papaya" in text:
+        return "Papaya", 1.0
+
+    if "calamansi" in text:
+        return "Calamansi", 1.0
+
+    if "avocado" in text:
+        return "Avocado", 1.0
+
+    if "watermelon" in text:
+        return "Watermelon", 1.0
 
     # --------------------------------------------------------
     # CARROTS
@@ -423,6 +473,34 @@ def detect_targets_in_line(text):
         found.append("Ginger")
 
     # --------------------------------------------------------
+    # FRUITS
+    # --------------------------------------------------------
+
+    if "lakatan" in normalized:
+        found.append("Banana (Lakatan)")
+
+    if "latundan" in normalized:
+        found.append("Banana (Latundan)")
+
+    if "banana" in normalized and "saba" in normalized:
+        found.append("Banana (Saba)")
+
+    if "mango" in normalized:
+        found.append("Mango (Carabao)")
+
+    if "papaya" in normalized:
+        found.append("Papaya")
+
+    if "calamansi" in normalized:
+        found.append("Calamansi")
+
+    if "avocado" in normalized:
+        found.append("Avocado")
+
+    if "watermelon" in normalized:
+        found.append("Watermelon")
+
+    # --------------------------------------------------------
     # PECHAY
     # --------------------------------------------------------
 
@@ -596,7 +674,7 @@ def extract_price_candidate(text):
     if value <= 0:
         return None
 
-    # Our target vegetable/spice prices should not
+    # Our target perishable-goods prices should not
     # realistically be in the thousands.
     if value > 1000:
         return None

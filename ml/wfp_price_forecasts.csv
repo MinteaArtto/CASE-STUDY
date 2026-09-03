@@ -1,10 +1,13 @@
 ﻿commodity,latest_month,latest_recorded_price,one_month_period,one_month_forecast,one_month_direction,three_month_period,three_month_forecast,three_month_direction
 Ampalaya,2026-06,138.37,2026-07,143.2,increase,2026-09,149.23,increase
+Banana (Lakatan),2026-06,99.09,2026-07,99.23,stable,2026-09,100.45,increase
 Cabbage,2026-06,79.1,2026-07,96.38,increase,2026-09,116.99,increase
+Calamansi,2026-06,125.31,2026-07,114.55,decrease,2026-09,105.79,decrease
 Carrots,2026-06,135.22,2026-07,136.84,increase,2026-09,151.25,increase
 Eggplant,2026-06,96.77,2026-07,112.79,increase,2026-09,137.49,increase
 Garlic,2026-06,331.43,2026-07,333.44,increase,2026-09,340.55,increase
 Ginger,2026-06,179.69,2026-07,185.38,increase,2026-09,195.74,increase
+Mango (Carabao),2026-06,147.69,2026-07,158.63,increase,2026-09,190.76,increase
 Red Onion,2026-06,110.07,2026-07,124.24,increase,2026-09,156.88,increase
 Squash,2026-06,66.76,2026-07,59.63,decrease,2026-09,55.07,decrease
 Tomato,2026-06,72.32,2026-07,90.39,increase,2026-09,117.62,increase
