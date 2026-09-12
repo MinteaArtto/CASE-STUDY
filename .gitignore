@@ -41,6 +41,10 @@ price_data/check_failed_pdfs.py
 # Threshold validation images
 ml/validation_images/
 
+# PRICE DATA - DIAGNOSTIC SCRIPTS
+price_data/check_fruit_coverage.py
+price_data/inspect_fruit_labels.py
+
 # ==========================================
 # GENERAL
 # ==========================================
