@@ -1,279 +1,66 @@
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
-const csv = require("csv-parser");
+const { spawn } = require("child_process");
+
+const PriceRecord = require("../models/PriceRecord");
 
 const router = express.Router();
 
-// ============================================================
-// PROJECT PATHS
-//
-// Current file:
-// CASE_STUDY/backend/routes/priceRoutes.js
-//
-// ../../ returns to:
-// CASE_STUDY/
-// ============================================================
-
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 
-// ============================================================
-// FORECAST FILES
-// ============================================================
+const PREDICT_SCRIPT = path.join(PROJECT_ROOT, "ml", "predict_price.py");
 
-// DA weekly regression forecasts
-const DA_FORECAST_FILE = path.join(PROJECT_ROOT, "ml", "price_forecasts.csv");
-
-// WFP monthly regression forecasts
-const WFP_FORECAST_FILE = path.join(
-  PROJECT_ROOT,
-  "ml",
-  "wfp_price_forecasts.csv",
-);
+// Use the Python inside your ml virtual environment.
+const PYTHON_PATH =
+  process.platform === "win32"
+    ? path.join(PROJECT_ROOT, "ml", ".venv", "Scripts", "python.exe")
+    : path.join(PROJECT_ROOT, "ml", ".venv", "bin", "python");
 
 // ============================================================
-// HISTORICAL DATA FILES
+// RUN PYTHON SCRIPT
 // ============================================================
 
-// Trusted DA weekly historical data
-const DA_HISTORY_FILE = path.join(
-  PROJECT_ROOT,
-  "price_data",
-  "price_dataset_final.csv",
-);
-
-// Clean WFP monthly historical data
-const WFP_HISTORY_FILE = path.join(
-  PROJECT_ROOT,
-  "price_data",
-  "price_dataset_wfp.csv",
-);
-
-// ============================================================
-// READ CSV
-// ============================================================
-
-function readCSV(filePath) {
+function runPython(args) {
   return new Promise((resolve, reject) => {
-    const rows = [];
+    const python = spawn(PYTHON_PATH, [PREDICT_SCRIPT, ...args], {
+      cwd: PROJECT_ROOT,
+    });
 
-    if (!fs.existsSync(filePath)) {
-      return reject(new Error(`CSV file not found: ${filePath}`));
-    }
+    let stdout = "";
+    let stderr = "";
 
-    fs.createReadStream(filePath)
-      .pipe(
-        csv({
-          mapHeaders: ({ header }) => header.replace(/^\uFEFF/, "").trim(),
-        }),
-      )
-      .on("data", (row) => {
-        rows.push(row);
-      })
-      .on("end", () => {
-        resolve(rows);
-      })
-      .on("error", (error) => {
-        reject(error);
-      });
+    python.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    python.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    python.on("error", (error) => {
+      reject(new Error(`Failed to start Python process: ${error.message}`));
+    });
+
+    python.on("close", (code) => {
+      if (code !== 0) {
+        return reject(
+          new Error(stderr.trim() || `Python exited with code ${code}`),
+        );
+      }
+
+      try {
+        const result = JSON.parse(stdout.trim());
+
+        resolve(result);
+      } catch (error) {
+        reject(new Error(`Python returned invalid JSON: ${stdout}`));
+      }
+    });
   });
 }
 
 // ============================================================
-// CONVERT VALUE TO NUMBER
-// ============================================================
-
-function toNumber(value) {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  const number = Number(value);
-
-  if (Number.isNaN(number)) {
-    return null;
-  }
-
-  return number;
-}
-
-// ============================================================
-// FIND PRODUCT
-//
-// Case-insensitive matching.
-//
-// Example:
-// Tomato
-// tomato
-// TOMATO
-//
-// all match.
-// ============================================================
-
-function findProduct(rows, product) {
-  const searchName = product.trim().toLowerCase();
-
-  return rows.find((row) => {
-    if (!row.commodity) {
-      return false;
-    }
-
-    return row.commodity.trim().toLowerCase() === searchName;
-  });
-}
-
-// ============================================================
-// FILTER PRODUCT HISTORY
-// ============================================================
-
-function filterProductRows(rows, product) {
-  const searchName = product.trim().toLowerCase();
-
-  return rows.filter((row) => {
-    if (!row.commodity) {
-      return false;
-    }
-
-    return row.commodity.trim().toLowerCase() === searchName;
-  });
-}
-
-// ============================================================
-// PRICE DECISION-SUPPORT SYSTEM
-//
-// Converts the model forecast into:
-// 1. Percentage change
-// 2. Trend interpretation
-// 3. Pricing suggestion
-// 4. Inventory recommendation
-//
-// Thresholds:
-//
-// >= +10%     Significant Increase
-// +3% to 10%  Increase
-// -3% to +3%  Stable
-// -10% to -3% Decrease
-// <= -10%     Significant Decrease
-// ============================================================
-
-function getPriceDecisionSupport(latestPrice, forecastPrice) {
-  // --------------------------------------------------------
-  // VALIDATE PRICES
-  // --------------------------------------------------------
-
-  if (latestPrice === null || forecastPrice === null || latestPrice <= 0) {
-    return {
-      percentageChange: null,
-
-      trend: "unknown",
-
-      pricingSuggestion:
-        "Insufficient price information is available to provide a pricing suggestion.",
-
-      inventoryRecommendation:
-        "Insufficient price information is available to provide an inventory recommendation.",
-    };
-  }
-
-  // --------------------------------------------------------
-  // CALCULATE PERCENTAGE CHANGE
-  // --------------------------------------------------------
-
-  const percentageChange = ((forecastPrice - latestPrice) / latestPrice) * 100;
-
-  const roundedChange = Math.round(percentageChange * 100) / 100;
-
-  // ========================================================
-  // SIGNIFICANT PRICE INCREASE
-  // ========================================================
-
-  if (percentageChange >= 10) {
-    return {
-      percentageChange: roundedChange,
-
-      trend: "significant increase",
-
-      pricingSuggestion:
-        "The forecast indicates a significant price increase. Monitor market conditions and consider gradual pricing adjustments while remaining competitive.",
-
-      inventoryRecommendation:
-        "Maintain adequate inventory to respond to the expected price increase, but avoid excessive stocking because the product is perishable. Continue monitoring product condition and market prices.",
-    };
-  }
-
-  // ========================================================
-  // MODERATE PRICE INCREASE
-  // ========================================================
-
-  if (percentageChange >= 3) {
-    return {
-      percentageChange: roundedChange,
-
-      trend: "increase",
-
-      pricingSuggestion:
-        "The forecast indicates a moderate price increase. Monitor market prices and consider adjusting the selling price gradually if the market trend continues.",
-
-      inventoryRecommendation:
-        "Maintain normal inventory levels and monitor the expected price increase before making major stocking decisions.",
-    };
-  }
-
-  // ========================================================
-  // SIGNIFICANT PRICE DECREASE
-  // ========================================================
-
-  if (percentageChange <= -10) {
-    return {
-      percentageChange: roundedChange,
-
-      trend: "significant decrease",
-
-      pricingSuggestion:
-        "The forecast indicates a significant price decrease. Consider competitive pricing strategies to encourage faster inventory turnover.",
-
-      inventoryRecommendation:
-        "Minimize unnecessary restocking and prioritize moving existing inventory to reduce exposure to the expected price decline.",
-    };
-  }
-
-  // ========================================================
-  // MODERATE PRICE DECREASE
-  // ========================================================
-
-  if (percentageChange <= -3) {
-    return {
-      percentageChange: roundedChange,
-
-      trend: "decrease",
-
-      pricingSuggestion:
-        "The forecast indicates a moderate price decrease. Consider maintaining competitive prices and closely monitor market changes.",
-
-      inventoryRecommendation:
-        "Prioritize selling existing inventory and consider reducing additional purchases until market prices stabilize.",
-    };
-  }
-
-  // ========================================================
-  // STABLE PRICE
-  // ========================================================
-
-  return {
-    percentageChange: roundedChange,
-
-    trend: "stable",
-
-    pricingSuggestion:
-      "The forecast indicates relatively stable prices. Maintain normal pricing while continuing to monitor market conditions.",
-
-    inventoryRecommendation:
-      "Maintain normal inventory levels because no major price movement is currently forecasted.",
-  };
-}
-
-// ============================================================
-// 1. GET AVAILABLE PRODUCTS
+// 1. GET AVAILABLE FORECASTABLE PRODUCTS
 //
 // GET:
 // /api/prices/products
@@ -281,84 +68,19 @@ function getPriceDecisionSupport(latestPrice, forecastPrice) {
 
 router.get("/products", async (req, res) => {
   try {
-    const [daRows, wfpRows] = await Promise.all([
-      readCSV(DA_FORECAST_FILE),
-      readCSV(WFP_FORECAST_FILE),
-    ]);
-
-    const productMap = new Map();
-
-    // ------------------------------------------------------
-    // DA PRODUCTS
-    // ------------------------------------------------------
-
-    daRows.forEach((row) => {
-      if (!row.commodity) {
-        return;
-      }
-
-      const name = row.commodity.trim();
-
-      const key = name.toLowerCase();
-
-      if (!productMap.has(key)) {
-        productMap.set(key, {
-          product: name,
-          weeklyAvailable: false,
-          monthlyAvailable: false,
-        });
-      }
-
-      productMap.get(key).weeklyAvailable = true;
-    });
-
-    // ------------------------------------------------------
-    // WFP PRODUCTS
-    // ------------------------------------------------------
-
-    wfpRows.forEach((row) => {
-      if (!row.commodity) {
-        return;
-      }
-
-      const name = row.commodity.trim();
-
-      const key = name.toLowerCase();
-
-      if (!productMap.has(key)) {
-        productMap.set(key, {
-          product: name,
-          weeklyAvailable: false,
-          monthlyAvailable: false,
-        });
-      }
-
-      productMap.get(key).monthlyAvailable = true;
-    });
-
-    // ------------------------------------------------------
-    // SORT PRODUCTS
-    // ------------------------------------------------------
-
-    const products = Array.from(productMap.values()).sort((a, b) =>
-      a.product.localeCompare(b.product),
-    );
+    const products = await runPython(["--products"]);
 
     return res.json({
       success: true,
-
       count: products.length,
-
       products,
     });
   } catch (error) {
-    console.error("Product list error:", error);
+    console.error("Price product list error:", error);
 
     return res.status(500).json({
       success: false,
-
-      message: "Failed to retrieve products.",
-
+      message: "Failed to retrieve forecastable products.",
       error: error.message,
     });
   }
@@ -367,387 +89,173 @@ router.get("/products", async (req, res) => {
 // ============================================================
 // 2. GET PRICE FORECAST
 //
-// GET:
-// /api/prices/forecast?product=Tomato
+// POST:
+// /api/prices/forecast
 //
-// Returns:
-//
-// weekly
-// → DA
-// → 1-week forecast
-//
-// monthly
-// → WFP / RiceLytics
-// → 1-month forecast
-// → 3-month forecast
-//
-// Also returns:
-// → percentage change
-// → trend
-// → pricing suggestion
-// → inventory recommendation
+// Body:
+// {
+//   "seriesKey":
+//   "HIGHLAND VEGETABLES | Broccoli, Local | Medium (8-10 cm diameter/bunch hd) | kg"
+// }
 // ============================================================
 
-router.get("/forecast", async (req, res) => {
+router.post("/forecast", async (req, res) => {
   try {
-    const product = req.query.product;
+    const { seriesKey } = req.body;
 
-    // ------------------------------------------------------
+    // --------------------------------------------------------
     // VALIDATION
-    // ------------------------------------------------------
+    // --------------------------------------------------------
 
-    if (!product) {
+    if (!seriesKey || !seriesKey.trim()) {
       return res.status(400).json({
         success: false,
-
-        message: "Product query parameter is required.",
-
-        example: "/api/prices/forecast?product=Tomato",
+        message: "seriesKey is required.",
       });
     }
 
-    // ------------------------------------------------------
-    // READ FORECAST FILES
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // CALL PYTHON FORECAST SCRIPT
+    // --------------------------------------------------------
 
-    const [daRows, wfpRows] = await Promise.all([
-      readCSV(DA_FORECAST_FILE),
+    const forecast = await runPython(["--forecast", seriesKey.trim()]);
 
-      readCSV(WFP_FORECAST_FILE),
-    ]);
-
-    // ------------------------------------------------------
-    // FIND PRODUCT
-    // ------------------------------------------------------
-
-    const daProduct = findProduct(daRows, product);
-
-    const wfpProduct = findProduct(wfpRows, product);
-
-    // ------------------------------------------------------
-    // PRODUCT NOT FOUND
-    // ------------------------------------------------------
-
-    if (!daProduct && !wfpProduct) {
-      return res.status(404).json({
-        success: false,
-
-        message: `No forecast data found for ${product}.`,
-      });
-    }
-
-    // ======================================================
-    // DA WEEKLY FORECAST
-    // ======================================================
-
-    let weekly = null;
-
-    if (daProduct) {
-      const latestWeeklyPrice = toNumber(daProduct.current_price);
-
-      const oneWeekPrice = toNumber(daProduct.one_week_forecast);
-
-      // Generate decision support
-      const oneWeekDecision = getPriceDecisionSupport(
-        latestWeeklyPrice,
-        oneWeekPrice,
-      );
-
-      weekly = {
-        source: "Department of Agriculture",
-
-        frequency: "weekly",
-
-        latestRecordedPrice: latestWeeklyPrice,
-
-        latestDate: daProduct.latest_date || null,
-
-        oneWeek: {
-          date: daProduct.one_week_date || null,
-
-          price: oneWeekPrice,
-
-          direction: daProduct.one_week_direction || null,
-
-          // ----------------------------------------------
-          // SOP 5 DECISION-SUPPORT OUTPUT
-          // ----------------------------------------------
-
-          percentageChange: oneWeekDecision.percentageChange,
-
-          trend: oneWeekDecision.trend,
-
-          pricingSuggestion: oneWeekDecision.pricingSuggestion,
-
-          inventoryRecommendation: oneWeekDecision.inventoryRecommendation,
-        },
-      };
-    }
-
-    // ======================================================
-    // WFP MONTHLY FORECAST
-    // ======================================================
-
-    let monthly = null;
-
-    if (wfpProduct) {
-      const latestMonthlyPrice = toNumber(wfpProduct.latest_recorded_price);
-
-      const oneMonthPrice = toNumber(wfpProduct.one_month_forecast);
-
-      const threeMonthPrice = toNumber(wfpProduct.three_month_forecast);
-
-      // ----------------------------------------------------
-      // 1-MONTH DECISION SUPPORT
-      // ----------------------------------------------------
-
-      const oneMonthDecision = getPriceDecisionSupport(
-        latestMonthlyPrice,
-        oneMonthPrice,
-      );
-
-      // ----------------------------------------------------
-      // 3-MONTH DECISION SUPPORT
-      // ----------------------------------------------------
-
-      const threeMonthDecision = getPriceDecisionSupport(
-        latestMonthlyPrice,
-        threeMonthPrice,
-      );
-
-      monthly = {
-        source: "WFP / RiceLytics",
-
-        frequency: "monthly",
-
-        latestRecordedPrice: latestMonthlyPrice,
-
-        latestMonth: wfpProduct.latest_month || null,
-
-        // ==================================================
-        // 1-MONTH FORECAST
-        // ==================================================
-
-        oneMonth: {
-          period: wfpProduct.one_month_period || null,
-
-          price: oneMonthPrice,
-
-          direction: wfpProduct.one_month_direction || null,
-
-          percentageChange: oneMonthDecision.percentageChange,
-
-          trend: oneMonthDecision.trend,
-
-          pricingSuggestion: oneMonthDecision.pricingSuggestion,
-
-          inventoryRecommendation: oneMonthDecision.inventoryRecommendation,
-        },
-
-        // ==================================================
-        // 3-MONTH FORECAST
-        // ==================================================
-
-        threeMonths: {
-          period: wfpProduct.three_month_period || null,
-
-          price: threeMonthPrice,
-
-          direction: wfpProduct.three_month_direction || null,
-
-          percentageChange: threeMonthDecision.percentageChange,
-
-          trend: threeMonthDecision.trend,
-
-          pricingSuggestion: threeMonthDecision.pricingSuggestion,
-
-          inventoryRecommendation: threeMonthDecision.inventoryRecommendation,
-        },
-      };
-    }
-
-    // ======================================================
-    // FINAL RESPONSE
-    // ======================================================
+    // --------------------------------------------------------
+    // RESPONSE
+    // --------------------------------------------------------
 
     return res.json({
       success: true,
-
-      product: daProduct?.commodity || wfpProduct?.commodity || product,
-
-      weekly,
-
-      monthly,
+      forecast,
     });
   } catch (error) {
     console.error("Price forecast error:", error);
 
+    const message = error.message || "";
+
+    // --------------------------------------------------------
+    // USER / DATA ERROR
+    // --------------------------------------------------------
+
+    if (
+      message.includes("No records found") ||
+      message.includes("At least 16") ||
+      message.includes("historical records")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
+
+    // --------------------------------------------------------
+    // SERVER ERROR
+    // --------------------------------------------------------
+
     return res.status(500).json({
       success: false,
-
-      message: "Failed to retrieve price forecast.",
-
-      error: error.message,
+      message: "Failed to generate price forecast.",
+      error: message,
     });
   }
 });
 
 // ============================================================
-// 3. GET HISTORICAL PRICE DATA
+// 3. GET HISTORICAL PRICE RECORDS
 //
-// WEEKLY:
-// /api/prices/history?product=Tomato&type=weekly
+// GET:
+// /api/prices/history?seriesKey=...
 //
-// MONTHLY:
-// /api/prices/history?product=Tomato&type=monthly
+// Example:
+// /api/prices/history?seriesKey=HIGHLAND VEGETABLES | Broccoli, Local | ...
 // ============================================================
 
 router.get("/history", async (req, res) => {
   try {
-    const product = req.query.product;
+    const { seriesKey } = req.query;
 
-    const type = (req.query.type || "monthly").trim().toLowerCase();
+    // --------------------------------------------------------
+    // VALIDATION
+    // --------------------------------------------------------
 
-    // ------------------------------------------------------
-    // VALIDATE PRODUCT
-    // ------------------------------------------------------
-
-    if (!product) {
+    if (!seriesKey || !seriesKey.trim()) {
       return res.status(400).json({
         success: false,
-
-        message: "Product query parameter is required.",
-
-        example: "/api/prices/history?product=Tomato&type=monthly",
+        message: "seriesKey query parameter is required.",
       });
     }
 
-    // ------------------------------------------------------
-    // VALIDATE TYPE
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // GET HISTORY FROM MONGODB
+    // --------------------------------------------------------
 
-    if (type !== "weekly" && type !== "monthly") {
-      return res.status(400).json({
-        success: false,
-
-        message: "Type must be either weekly or monthly.",
-      });
-    }
-
-    // ======================================================
-    // WEEKLY HISTORY
-    // ======================================================
-
-    if (type === "weekly") {
-      const rows = await readCSV(DA_HISTORY_FILE);
-
-      const productRows = filterProductRows(rows, product);
-
-      const history = productRows
-        .map((row) => ({
-          date: row.week_start,
-
-          weekEnd: row.week_end || null,
-
-          price: toNumber(row.weekly_average_price),
-        }))
-        .filter((row) => {
-          return row.date && row.price !== null;
-        })
-        .sort((a, b) => {
-          return new Date(a.date) - new Date(b.date);
-        });
-
-      // ----------------------------------------------------
-      // NO WEEKLY DATA
-      // ----------------------------------------------------
-
-      if (history.length === 0) {
-        return res.status(404).json({
-          success: false,
-
-          message: `No weekly historical data found for ${product}.`,
-        });
-      }
-
-      // ----------------------------------------------------
-      // WEEKLY RESPONSE
-      // ----------------------------------------------------
-
-      return res.json({
-        success: true,
-
-        product,
-
-        type: "weekly",
-
-        source: "Department of Agriculture",
-
-        count: history.length,
-
-        firstDate: history[0].date,
-
-        latestDate: history[history.length - 1].date,
-
-        history,
-      });
-    }
-
-    // ======================================================
-    // MONTHLY HISTORY
-    // ======================================================
-
-    const rows = await readCSV(WFP_HISTORY_FILE);
-
-    const productRows = filterProductRows(rows, product);
-
-    const history = productRows
-      .map((row) => ({
-        date: row.date,
-
-        year: row.year ? Number(row.year) : null,
-
-        month: row.month ? Number(row.month) : null,
-
-        price: toNumber(row.monthly_average_price),
-      }))
-      .filter((row) => {
-        return row.date && row.price !== null;
+    const records = await PriceRecord.find({
+      seriesKey: seriesKey.trim(),
+    })
+      .sort({
+        weekStart: 1,
       })
-      .sort((a, b) => {
-        return new Date(a.date) - new Date(b.date);
-      });
+      .select({
+        _id: 0,
+        weekStart: 1,
+        weekEnd: 1,
+        year: 1,
+        category: 1,
+        commodity: 1,
+        specification: 1,
+        unit: 1,
+        weeklyAveragePrice: 1,
+        seriesKey: 1,
+      })
+      .lean();
 
-    // ------------------------------------------------------
-    // NO MONTHLY DATA
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // NO RECORDS FOUND
+    // --------------------------------------------------------
 
-    if (history.length === 0) {
+    if (records.length === 0) {
       return res.status(404).json({
         success: false,
-
-        message: `No monthly historical data found for ${product}.`,
+        message: "No historical price records found for this series.",
       });
     }
 
-    // ------------------------------------------------------
-    // MONTHLY RESPONSE
-    // ------------------------------------------------------
+    // --------------------------------------------------------
+    // FORMAT HISTORY
+    // --------------------------------------------------------
+
+    const history = records.map((record) => ({
+      weekStart: record.weekStart,
+
+      weekEnd: record.weekEnd,
+
+      year: record.year,
+
+      price: record.weeklyAveragePrice,
+    }));
+
+    // --------------------------------------------------------
+    // RESPONSE
+    // --------------------------------------------------------
 
     return res.json({
       success: true,
 
-      product,
+      seriesKey: seriesKey.trim(),
 
-      type: "monthly",
+      category: records[0].category,
 
-      source: "WFP / RiceLytics",
+      commodity: records[0].commodity,
 
-      count: history.length,
+      specification: records[0].specification,
 
-      firstDate: history[0].date,
+      unit: records[0].unit,
 
-      latestDate: history[history.length - 1].date,
+      count: records.length,
+
+      firstDate: records[0].weekStart,
+
+      latestDate: records[records.length - 1].weekStart,
 
       history,
     });
@@ -757,7 +265,7 @@ router.get("/history", async (req, res) => {
     return res.status(500).json({
       success: false,
 
-      message: "Failed to retrieve price history.",
+      message: "Failed to retrieve historical prices.",
 
       error: error.message,
     });
