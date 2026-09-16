@@ -4,6 +4,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -1338,6 +1339,7 @@ function SimpleLineChart({
    ============================================================ */
 
 export default function Forecast() {
+  const [searchParams] = useSearchParams();
   const API_BASE =
     import.meta.env
       .VITE_API_URL ||
@@ -1377,6 +1379,7 @@ export default function Forecast() {
     setError,
   ] = useState(null);
   const [productSearch, setProductSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   /* ==========================================================
      PRODUCTS
@@ -1404,8 +1407,12 @@ export default function Forecast() {
           );
 
           if (availableProducts.length > 0) {
+            const requestedSeriesKey = searchParams.get("seriesKey");
+            const requestedProduct = availableProducts.find(
+              (product) => product.series_key === requestedSeriesKey,
+            );
             setSelectedProduct(
-              availableProducts[0].series_key
+              requestedProduct?.series_key || availableProducts[0].series_key
             );
           }
         } else {
@@ -1418,7 +1425,7 @@ export default function Forecast() {
           err
         );
       });
-  }, [API_BASE]);
+  }, [API_BASE, searchParams]);
 
   /* ==========================================================
      FORECAST + HISTORY
@@ -1529,9 +1536,12 @@ export default function Forecast() {
 
   const filteredProducts = useMemo(() => {
     const query = productSearch.trim().toLowerCase();
-    if (!query) return products;
+    const categoryProducts = categoryFilter === "all"
+      ? products
+      : products.filter((product) => (product.category || "Uncategorized") === categoryFilter);
+    if (!query) return categoryProducts;
 
-    return [...products]
+    return [...categoryProducts]
       .map((product) => ({
         product,
         score: productSearchScore(
@@ -1542,7 +1552,12 @@ export default function Forecast() {
       .filter(({ score }) => score > 0)
       .sort((a, b) => b.score - a.score)
       .map(({ product }) => product);
-  }, [productSearch, products]);
+  }, [categoryFilter, productSearch, products]);
+
+  const categories = useMemo(
+    () => [...new Set(products.map((product) => product.category || "Uncategorized"))].sort(),
+    [products],
+  );
 
   /* ==========================================================
      HISTORICAL DATA
@@ -1718,15 +1733,27 @@ export default function Forecast() {
 
         <section className="mt-10 flex flex-col items-center gap-6">
 
-          <div className="max-w-2xl w-full">
+          <div className="max-w-2xl w-full flex flex-col sm:flex-row gap-3">
             <input
               type="search"
               value={productSearch}
               onChange={(event) => setProductSearch(event.target.value)}
               placeholder="Search commodities..."
-              className="w-full bg-white/80 border border-ink/10 rounded-full py-3 px-5 text-sm"
+              className="min-w-0 flex-1 bg-white/80 border border-ink/10 rounded-full py-3 px-5 text-sm"
               aria-label="Search commodities"
             />
+            <select
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+              className="sm:w-64 bg-white/80 border border-ink/10 rounded-full py-3 px-5 text-sm text-ink outline-none focus:ring-2 focus:ring-teal/40 dark:bg-ink/40"
+              aria-label="Filter commodities by category"
+            >
+              <option value="all">All categories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
             <div className="mt-3 max-h-44 overflow-y-auto rounded-2xl bg-white/70 border border-ink/10 p-2 grid sm:grid-cols-2 gap-2">
               {filteredProducts.map((product) => (
                 <button
@@ -1756,7 +1783,6 @@ export default function Forecast() {
                 </p>
               )}
             </div>
-          </div>
 
           {/* ==================================================
               LOADING / ERROR

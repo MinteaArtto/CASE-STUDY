@@ -218,6 +218,68 @@ body {
   fill: #d1d5db !important;
 }
 
+.current-price-header,
+.current-price-cell {
+  color: #15803d;
+}
+
+.current-price-header {
+  border-top: 2px solid #22c55e;
+  border-bottom: 2px solid #22c55e;
+}
+
+.current-price-cell {
+  border-left: 1px solid rgb(34 197 94 / 45%);
+  border-right: 1px solid rgb(34 197 94 / 45%);
+}
+
+.dark .current-price-header,
+.dark .current-price-cell {
+  color: #c084fc;
+}
+
+.dark .current-price-header {
+  border-top-color: #a855f7;
+  border-bottom-color: #a855f7;
+}
+
+.dark .current-price-cell {
+  border-left-color: rgb(168 85 247 / 55%);
+  border-right-color: rgb(168 85 247 / 55%);
+}
+
+.dashboard-price-row:hover {
+  background-color: #eef7ee;
+}
+
+.dark .dashboard-price-row:hover {
+  background-color: #34383b;
+}
+
+.dashboard-commodity-link:hover {
+  color: #0f766e;
+}
+
+.dark .dashboard-commodity-link:hover {
+  color: #a855f7;
+}
+
+.header-nav-link:hover {
+  color: #202124;
+}
+
+.dark .header-nav-link:hover {
+  color: #c084fc;
+}
+
+.dark .header-about-link {
+  border: 1px solid rgb(192 132 252 / 65%);
+}
+
+.dark .header-about-link:hover {
+  border-color: #e9d5ff;
+}
+
 /* visible keyboard focus, kept subtle */
 a:focus-visible,
 button:focus-visible {

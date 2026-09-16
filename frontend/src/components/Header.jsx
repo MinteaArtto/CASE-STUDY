@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Moon, Sun, UserRound } from "lucide-react";
 import User from "../pages/User";
@@ -9,10 +9,11 @@ import UserForgotPassword from "../pages/UserForgotPassword";
 const NAV_LINKS = [
   { label: "Forecast", to: "/forecast" },
   { label: "Classifier", to: "/classifier" },
-  { label: "Recommendation", to: "/recommendation" },
+  { label: "Dashboard", to: "/dashboard", requiresAuth: true },
 ];
 
 export default function Header() {
+  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isUserOpen, setIsUserOpen] = useState(false);
@@ -22,6 +23,23 @@ export default function Header() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return window.localStorage.getItem("mamav-theme") === "dark";
   });
+
+  useEffect(() => {
+    const storedProfile = window.localStorage.getItem("mamav-user");
+    if (storedProfile) {
+      setUserProfile(JSON.parse(storedProfile));
+      setIsLoggedIn(true);
+    }
+
+    const handleAuthChange = () => {
+      const profile = window.localStorage.getItem("mamav-user");
+      setUserProfile(profile ? JSON.parse(profile) : null);
+      setIsLoggedIn(Boolean(profile));
+    };
+
+    window.addEventListener("mamav-auth-change", handleAuthChange);
+    return () => window.removeEventListener("mamav-auth-change", handleAuthChange);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDarkMode);
@@ -72,18 +90,22 @@ export default function Header() {
 
         {/* Navigation links — right side */}
         <nav className="flex items-center gap-8 text-sm text-ink/80">
-          {NAV_LINKS.map(({ label, to }) => (
-            <Link
+          {NAV_LINKS.map(({ label, to, requiresAuth }) => (
+            <button
               key={label}
-              to={to}
-              className="hover:text-ink transition-colors font-display"
+              type="button"
+              onClick={() => {
+                if (!requiresAuth || isLoggedIn) navigate(to);
+                else setAuthView("signup");
+              }}
+              className="header-nav-link transition-colors font-display"
             >
               {label}
-            </Link>
+            </button>
           ))}
           <Link
             to="/about"
-            className="bg-ink text-cream-light text-sm font-medium px-5 py-2 rounded-full hover:bg-ink/90 transition-colors"
+            className="header-about-link bg-ink text-cream-light text-sm font-medium px-5 py-2 rounded-full hover:bg-ink/90 transition-colors"
           >
             About
           </Link>
@@ -118,6 +140,8 @@ export default function Header() {
             setIsLoggedIn(false);
             setUserProfile(null);
             setIsUserOpen(false);
+            window.localStorage.removeItem("mamav-user");
+            window.dispatchEvent(new Event("mamav-auth-change"));
           }}
         />
       )}
@@ -128,6 +152,8 @@ export default function Header() {
           onComplete={(profile) => {
             setUserProfile(profile);
             setIsLoggedIn(true);
+            window.localStorage.setItem("mamav-user", JSON.stringify(profile));
+            window.dispatchEvent(new Event("mamav-auth-change"));
             setAuthView(null);
             setIsUserOpen(true);
           }}
@@ -141,6 +167,8 @@ export default function Header() {
           onComplete={(profile) => {
             setUserProfile(profile);
             setIsLoggedIn(true);
+            window.localStorage.setItem("mamav-user", JSON.stringify(profile));
+            window.dispatchEvent(new Event("mamav-auth-change"));
             setAuthView(null);
             setIsUserOpen(true);
           }}

@@ -32,7 +32,7 @@ const SOCIALS = [
 import { Link } from "react-router-dom";
 
 const COLUMNS = [
-  { heading: "Features", links: ["Forecast", "Classifier", "Recommendation"] },
+  { heading: "Features", links: ["Forecast", "Classifier", "Dashboard"] },
   { heading: "About", links: ["Methodology", "Objectives", "Our team"] },
   { heading: "Support", links: ["Contact", "FAQ"] },
 ];
@@ -72,8 +72,8 @@ export default function Footer() {
                     ? "/forecast"
                     : link === "Classifier"
                     ? "/classifier"
-                    : link === "Recommendation"
-                    ? "/recommendation"
+                    : link === "Dashboard"
+                    ? "/dashboard"
                     : null;
 
                 return (

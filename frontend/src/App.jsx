@@ -26,7 +26,6 @@ export default function App() {
         <Route path="/forecast" element={<Forecast />} />
         <Route path="/classifier" element={<Classifier />} />
         <Route path="/dashboard" element={<UserDashboard />} />
-        <Route path="/recommendation" element={<Placeholder label="Recommendation" />} />
         <Route path="/about" element={<Placeholder label="About" />} />
       </Routes>
     </BrowserRouter>

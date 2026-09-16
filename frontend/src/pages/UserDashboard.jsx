@@ -1,14 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Moon, Sun, TrendingDown, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import UserLogIn from "./UserLogIn";
+import UserSignUp from "./UserSignUp";
+import UserForgotPassword from "./UserForgotPassword";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function formatPrice(value) {
-  return typeof value === "number" && Number.isFinite(value)
-    ? `₱${value.toFixed(2)}`
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? `₱${number.toFixed(2)}`
     : "—";
+}
+
+function getPercentageChange(current, projected) {
+  const currentValue = Number(current);
+  const projectedValue = Number(projected);
+
+  if (!Number.isFinite(currentValue) || !Number.isFinite(projectedValue) || currentValue === 0) {
+    return null;
+  }
+
+  return Number((((projectedValue - currentValue) / currentValue) * 100).toFixed(2));
 }
 
 function PriceCell({ value, direction }) {
@@ -21,21 +37,56 @@ function PriceCell({ value, direction }) {
   );
 }
 
+function ChangeCell({ percentage }) {
+  if (percentage === null || percentage === undefined) {
+    return <span className="text-ink/45">—</span>;
+  }
+
+  const isIncrease = percentage > 0;
+  const isDecrease = percentage < 0;
+
+  return (
+    <div className={`flex items-center gap-1 whitespace-nowrap font-medium ${
+      isIncrease ? "text-red-500" : isDecrease ? "text-teal" : "text-ink/60"
+    }`}>
+      {isIncrease && <ArrowUp className="h-4 w-4" aria-hidden="true" />}
+      {isDecrease && <ArrowDown className="h-4 w-4" aria-hidden="true" />}
+      {percentage > 0 ? "+" : ""}{percentage.toFixed(2)}%
+    </div>
+  );
+}
+
 export default function UserDashboard() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(() => {
+    const stored = window.localStorage.getItem("mamav-user");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [authView, setAuthView] = useState(() => (user ? null : "signup"));
   const [products, setProducts] = useState([]);
   const [priceRows, setPriceRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(
-    () => document.documentElement.classList.contains("dark"),
-  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const rowsPerPage = 10;
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode);
-    window.localStorage.setItem("mamav-theme", isDarkMode ? "dark" : "light");
-  }, [isDarkMode]);
+    const handleAuthChange = () => {
+      const stored = window.localStorage.getItem("mamav-user");
+      setUser(stored ? JSON.parse(stored) : null);
+      if (!stored) setAuthView("signup");
+    };
 
+    window.addEventListener("mamav-auth-change", handleAuthChange);
+    return () => window.removeEventListener("mamav-auth-change", handleAuthChange);
+  }, []);
   useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return undefined;
+    }
+
     const controller = new AbortController();
 
     async function loadPrices() {
@@ -52,53 +103,58 @@ export default function UserDashboard() {
         const availableProducts = productsData.products || [];
         setProducts(availableProducts);
 
-        const rows = await Promise.all(
+        const rows = (await Promise.all(
           availableProducts.map(async (product) => {
             const seriesKey = product.series_key;
-            const [forecastResponse, historyResponse] = await Promise.all([
+            const [forecastResult, historyResult] = await Promise.allSettled([
               fetch(`${API_BASE}/api/prices/forecast`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ seriesKey }),
                 signal: controller.signal,
-              }),
+              }).then((response) => response.json()),
               fetch(
                 `${API_BASE}/api/prices/history?seriesKey=${encodeURIComponent(seriesKey)}`,
                 { signal: controller.signal },
-              ),
+              ).then((response) => response.json()),
             ]);
 
-            const forecastData = await forecastResponse.json();
-            const historyData = await historyResponse.json();
-
-            if (!forecastResponse.ok || !forecastData?.success) {
-              throw new Error(`Forecast unavailable for ${product.commodity}`);
-            }
+            const forecastData = forecastResult.status === "fulfilled"
+              ? forecastResult.value
+              : null;
+            const historyData = historyResult.status === "fulfilled"
+              ? historyResult.value
+              : null;
 
             const history = historyData?.success ? historyData.history || [] : [];
-            const currentPrice = forecastData.forecast?.current_price;
-            const pastPrice = history.length > 1
-              ? history[history.length - 2]?.price
-              : history[history.length - 1]?.price;
-            const forecasts = forecastData.forecast?.forecasts || {};
+            const forecast = forecastData?.success ? forecastData.forecast : null;
+            const currentPrice = forecast?.current_price ?? history.at(-1)?.price;
+            const forecasts = forecast?.forecasts || {};
+
+            if (currentPrice === undefined && history.length === 0) {
+              return null;
+            }
 
             return {
               id: seriesKey,
               commodity: product.commodity || "Unknown commodity",
+              category: product.category || historyData.category || "Uncategorized",
               specification: product.specification,
               unit: product.unit || historyData.unit || "unit",
               currentPrice,
-              pastPrice,
               week1: forecasts["1w"]?.predicted_price,
-              month1: forecasts["4w"]?.predicted_price,
-              currentDirection: forecasts["1w"]?.direction,
-              pastDirection: currentPrice > pastPrice ? "up" : currentPrice < pastPrice ? "down" : null,
-              futureDirection: forecasts["1w"]?.direction,
+              week2: forecasts["2w"]?.predicted_price,
+              week4: forecasts["4w"]?.predicted_price,
+              projectedChange: getPercentageChange(
+                currentPrice,
+                forecasts["1w"]?.predicted_price,
+              ),
             };
           }),
-        );
+        )).filter(Boolean);
 
         setPriceRows(rows);
+        setCurrentPage(1);
       } catch (loadError) {
         if (loadError.name !== "AbortError") {
           console.error("Dashboard price fetch error", loadError);
@@ -111,13 +167,21 @@ export default function UserDashboard() {
 
     loadPrices();
     return () => controller.abort();
-  }, []);
+  }, [user]);
 
-  const totals = useMemo(() => {
-    const increases = priceRows.filter((row) => row.futureDirection === "up").length;
-    const decreases = priceRows.filter((row) => row.futureDirection === "down").length;
-    return { increases, decreases };
-  }, [priceRows]);
+  const categories = [...new Set(priceRows.map((row) => row.category).filter(Boolean))].sort();
+  const filteredRows = categoryFilter === "all"
+    ? priceRows
+    : priceRows.filter((row) => row.category === categoryFilter);
+  const visibleRows = filteredRows.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage,
+  );
+  const filteredPageCount = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
+
+  useEffect(() => {
+    if (currentPage > filteredPageCount) setCurrentPage(filteredPageCount);
+  }, [currentPage, filteredPageCount]);
 
   return (
     <div className="min-h-screen bg-cream-light text-ink transition-colors">
@@ -134,68 +198,156 @@ export default function UserDashboard() {
               forecasted movement for every available commodity.
             </p>
           </div>
-          <button
-            type="button"
-            aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-            aria-pressed={isDarkMode}
-            onClick={() => setIsDarkMode((enabled) => !enabled)}
-            className="dark-mode-toggle w-11 h-11 rounded-full border border-ink/10 bg-white/70 flex items-center justify-center transition-colors"
-          >
-            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-4 mt-10">
+        <div className="grid sm:grid-cols-1 max-w-sm gap-4 mt-10">
           <SummaryCard label="Tracked commodities" value={products.length} />
-          <SummaryCard label="Forecasted increases" value={totals.increases} icon={<TrendingUp className="w-5 h-5 text-red-500" />} />
-          <SummaryCard label="Forecasted decreases" value={totals.decreases} icon={<TrendingDown className="w-5 h-5 text-teal" />} />
         </div>
 
         <section className="mt-8 rounded-3xl bg-white/90 border border-ink/10 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-ink/10">
             <h2 className="font-display font-bold text-2xl">Commodity prices</h2>
-            <p className="text-sm text-ink/60 mt-1">
-              Scroll horizontally and vertically to explore all available price records.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm text-ink/60">
+                Select a commodity to open its full forecast.
+              </p>
+              <label className="flex items-center gap-2 text-sm text-ink/65">
+                Category
+                <select
+                  value={categoryFilter}
+                  onChange={(event) => {
+                    setCategoryFilter(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-full border border-ink/15 bg-white/80 px-4 py-2 text-ink outline-none focus:ring-2 focus:ring-teal/40 dark:bg-ink/40"
+                  aria-label="Filter dashboard by category"
+                >
+                  <option value="all">All categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
           <div className="max-h-[30rem] overflow-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-[1100px] text-left text-sm">
               <thead className="sticky top-0 z-10 bg-cream-light text-ink/60">
                 <tr>
+                  <th className="px-6 py-4 font-medium">Category</th>
                   <th className="px-6 py-4 font-medium">Commodity name</th>
                   <th className="px-6 py-4 font-medium">Unit</th>
-                  <th className="px-6 py-4 font-medium">Past price</th>
-                  <th className="px-6 py-4 font-medium">Current price</th>
+                  <th className="current-price-header px-6 py-4 font-medium">
+                    Current price
+                  </th>
                   <th className="px-6 py-4 font-medium">Future price (1w)</th>
-                  <th className="px-6 py-4 font-medium">Future price (1m)</th>
+                  <th className="px-6 py-4 font-medium">Future price (2w)</th>
+                  <th className="px-6 py-4 font-medium">Future price (4w)</th>
+                  <th className="px-6 py-4 font-medium">Change (1w)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink/10">
                 {isLoading && (
-                  <tr><td colSpan="6" className="px-6 py-12 text-center text-ink/60">Loading market prices...</td></tr>
+                  <tr><td colSpan="8" className="px-6 py-12 text-center text-ink/60">Loading market prices...</td></tr>
                 )}
                 {!isLoading && error && (
-                  <tr><td colSpan="6" className="px-6 py-12 text-center text-red-600">{error}</td></tr>
+                  <tr><td colSpan="8" className="px-6 py-12 text-center text-red-600">{error}</td></tr>
                 )}
-                {!isLoading && !error && priceRows.map((row) => (
-                  <tr key={row.id} className="hover:bg-cream-light/70 transition-colors">
+                {!isLoading && !error && visibleRows.map((row) => (
+                  <tr key={row.id} className="dashboard-price-row transition-colors">
+                    <td className="px-6 py-4 text-ink/70">{row.category}</td>
                     <td className="px-6 py-4">
+                      <Link
+                        to={`/forecast?seriesKey=${encodeURIComponent(row.id)}`}
+                        className="dashboard-commodity-link block transition-colors"
+                      >
                       <p className="font-medium">{row.commodity}</p>
                       <p className="text-xs text-ink/50 mt-1">{row.specification}</p>
+                      </Link>
                     </td>
                     <td className="px-6 py-4 text-ink/65">{row.unit}</td>
-                    <td className="px-6 py-4"><PriceCell value={row.pastPrice} direction={row.pastDirection} /></td>
-                    <td className="px-6 py-4"><PriceCell value={row.currentPrice} /></td>
-                    <td className="px-6 py-4"><PriceCell value={row.week1} direction={row.futureDirection} /></td>
-                    <td className="px-6 py-4"><PriceCell value={row.month1} direction={row.futureDirection} /></td>
+                    <td className="current-price-cell px-6 py-4">
+                      <PriceCell value={row.currentPrice} />
+                    </td>
+                    <td className="px-6 py-4"><PriceCell value={row.week1} /></td>
+                    <td className="px-6 py-4"><PriceCell value={row.week2} /></td>
+                    <td className="px-6 py-4"><PriceCell value={row.week4} /></td>
+                    <td className="px-6 py-4"><ChangeCell percentage={row.projectedChange} /></td>
                   </tr>
                 ))}
+                {!isLoading && !error && !visibleRows.length && (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-12 text-center text-ink/60">
+                      No commodity prices are available.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
+          {!isLoading && !error && filteredRows.length > 0 && (
+            <div className="flex items-center justify-between gap-4 border-t border-ink/10 px-6 py-4 text-sm">
+              <span className="text-ink/60">
+                Showing {(currentPage - 1) * rowsPerPage + 1}-
+                {Math.min(currentPage * rowsPerPage, filteredRows.length)} of {filteredRows.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  className="rounded-full border border-ink/15 px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-cream-light transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="px-2 text-ink/60">
+                  Page {currentPage} of {filteredPageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage === filteredPageCount}
+                  onClick={() => setCurrentPage((page) => Math.min(filteredPageCount, page + 1))}
+                  className="rounded-full border border-ink/15 px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-cream-light transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       </main>
       <Footer />
+      {authView === "signup" && (
+        <UserSignUp
+          onClose={() => navigate("/")}
+          onLogIn={() => setAuthView("login")}
+          onComplete={(profile) => {
+            window.localStorage.setItem("mamav-user", JSON.stringify(profile));
+            window.dispatchEvent(new Event("mamav-auth-change"));
+            setUser(profile);
+            setAuthView(null);
+          }}
+        />
+      )}
+      {authView === "login" && (
+        <UserLogIn
+          onClose={() => navigate("/")}
+          onSignUp={() => setAuthView("signup")}
+          onForgotPassword={() => setAuthView("forgot-password")}
+          onComplete={(profile) => {
+            window.localStorage.setItem("mamav-user", JSON.stringify(profile));
+            window.dispatchEvent(new Event("mamav-auth-change"));
+            setUser(profile);
+            setAuthView(null);
+          }}
+        />
+      )}
+      {authView === "forgot-password" && (
+        <UserForgotPassword
+          onClose={() => navigate("/")}
+          onLogIn={() => setAuthView("login")}
+        />
+      )}
     </div>
   );
 }
