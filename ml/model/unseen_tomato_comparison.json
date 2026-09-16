@@ -1,0 +1,40 @@
+{
+    "held_out_commodity": "Tomato",
+    "training_images": 33937,
+    "validation_images": 5989,
+    "held_out_test_images": 8028,
+    "cnn": {
+        "validation_accuracy": 0.9687760894974119,
+        "held_out_accuracy": 0.7357997010463379,
+        "confusion_matrix": [
+            [
+                3933,
+                81
+            ],
+            [
+                2040,
+                1974
+            ]
+        ]
+    },
+    "cnn_plus_decision_tree": {
+        "best_settings": {
+            "max_depth": 10,
+            "min_samples_split": 10,
+            "min_samples_leaf": 5
+        },
+        "validation_accuracy": 0.960427450325597,
+        "held_out_accuracy": 0.7179870453413054,
+        "confusion_matrix": [
+            [
+                3881,
+                133
+            ],
+            [
+                2131,
+                1883
+            ]
+        ]
+    },
+    "accuracy_difference": -0.017812655705032432
+}

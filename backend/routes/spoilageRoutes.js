@@ -8,28 +8,15 @@ const axios = require("axios");
 const router = express.Router();
 
 // ============================================================
-// CONFIDENCE THRESHOLD
-// ============================================================
-//
-// Based on the external validation test:
-// Predictions below 90% are classified as "Uncertain".
-//
-// IMPORTANT:
-// This threshold is for LOW-CONFIDENCE predictions.
-// It is NOT a detector for non-produce images.
-//
-// ============================================================
-
-const CONFIDENCE_THRESHOLD = 0.9;
-
-// ============================================================
 // UPLOAD FOLDER
 // ============================================================
 
 const uploadDir = path.join(__dirname, "..", "uploads");
 
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, {
+    recursive: true,
+  });
 }
 
 // ============================================================
@@ -53,17 +40,35 @@ const upload = multer({
 });
 
 // ============================================================
+// DELETE TEMPORARY IMAGE
+// ============================================================
+
+function deleteTemporaryImage(imagePath) {
+  fs.unlink(imagePath, (error) => {
+    if (error) {
+      console.error("Could not delete temporary image:", error.message);
+    } else {
+      console.log("Temporary image deleted.");
+    }
+  });
+}
+
+// ============================================================
 // NYCKEL AUTHENTICATION
 // ============================================================
 
 async function getNyckelAccessToken() {
   const response = await axios.post(
     "https://www.nyckel.com/connect/token",
+
     new URLSearchParams({
       grant_type: "client_credentials",
+
       client_id: process.env.NYCKEL_CLIENT_ID,
+
       client_secret: process.env.NYCKEL_CLIENT_SECRET,
     }),
+
     {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -79,13 +84,10 @@ async function getNyckelAccessToken() {
 // ============================================================
 
 async function predictSpoilageWithNyckel(imagePath) {
-  // Get Nyckel access token
   const accessToken = await getNyckelAccessToken();
 
-  // Read image
   const imageBuffer = fs.readFileSync(imagePath);
 
-  // Convert image to Base64
   const base64Image = imageBuffer.toString("base64");
 
   const extension = path.extname(imagePath).toLowerCase();
@@ -100,15 +102,17 @@ async function predictSpoilageWithNyckel(imagePath) {
 
   const dataUri = `data:${mimeType};base64,${base64Image}`;
 
-  // Call Nyckel
   const response = await axios.post(
     `https://www.nyckel.com/v1/functions/${process.env.NYCKEL_FUNCTION_ID}/invoke`,
+
     {
       data: dataUri,
     },
+
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+
         "Content-Type": "application/json",
       },
     },
@@ -123,19 +127,15 @@ async function predictSpoilageWithNyckel(imagePath) {
 
 function getRecommendation(prediction, spoilageType) {
   // ========================================================
-  // UNCERTAIN RESULT
-  // ========================================================
-
-  if (prediction?.toLowerCase() === "uncertain") {
-    return "The classification confidence is below the required threshold. Manual inspection is recommended, or upload a clearer image of a supported perishable product.";
-  }
-
-  // ========================================================
-  // FRESH PRODUCT
+  // FRESH
   // ========================================================
 
   if (prediction?.toLowerCase() === "fresh") {
-    return "The product is classified as fresh. Maintain proper handling and continue regular inspection to preserve its quality.";
+    return (
+      "The product is classified as fresh. " +
+      "Maintain proper handling and continue " +
+      "regular inspection to preserve its quality."
+    );
   }
 
   // ========================================================
@@ -143,10 +143,13 @@ function getRecommendation(prediction, spoilageType) {
   // ========================================================
 
   if (prediction?.toLowerCase() !== "rotten") {
-    return "Inspect the product before making an inventory decision.";
+    return "Inspect the product before making " + "an inventory decision.";
   }
 
-  // Convert Nyckel label to lowercase
+  // ========================================================
+  // ROTTEN
+  // ========================================================
+
   const type = spoilageType?.toLowerCase() || "";
 
   // ========================================================
@@ -158,7 +161,11 @@ function getRecommendation(prediction, spoilageType) {
     type.includes("shrinkage") ||
     type.includes("wrinkling")
   ) {
-    return "Inspect the affected product and prioritize it for inventory review due to visible signs of moisture loss and deterioration.";
+    return (
+      "Inspect the affected product and prioritize " +
+      "it for inventory review due to visible " +
+      "signs of moisture loss and deterioration."
+    );
   }
 
   // ========================================================
@@ -166,7 +173,11 @@ function getRecommendation(prediction, spoilageType) {
   // ========================================================
 
   if (type.includes("discoloration") || type.includes("color change")) {
-    return "Inspect and separate the affected product from normal inventory and check nearby products for similar visible changes.";
+    return (
+      "Inspect and separate the affected product " +
+      "from normal inventory and check nearby " +
+      "products for similar visible changes."
+    );
   }
 
   // ========================================================
@@ -178,7 +189,11 @@ function getRecommendation(prediction, spoilageType) {
     type.includes("textural change") ||
     type.includes("pitting")
   ) {
-    return "Inspect the severity of the deterioration and prioritize the affected product for immediate handling.";
+    return (
+      "Inspect the severity of the deterioration " +
+      "and prioritize the affected product for " +
+      "immediate handling."
+    );
   }
 
   // ========================================================
@@ -191,7 +206,11 @@ function getRecommendation(prediction, spoilageType) {
     type.includes("slime") ||
     type.includes("pus")
   ) {
-    return "Remove the affected product from sellable inventory and inspect nearby products for similar signs of spoilage.";
+    return (
+      "Remove the affected product from sellable " +
+      "inventory and inspect nearby products for " +
+      "similar signs of spoilage."
+    );
   }
 
   // ========================================================
@@ -199,18 +218,26 @@ function getRecommendation(prediction, spoilageType) {
   // ========================================================
 
   if (type.includes("fermentation") || type.includes("liquefaction")) {
-    return "Separate the affected product from sellable inventory and inspect it for further signs of advanced deterioration.";
+    return (
+      "Separate the affected product from sellable " +
+      "inventory and inspect it for further signs " +
+      "of advanced deterioration."
+    );
   }
 
   // ========================================================
   // FOUL ODOR / SMELL
   //
   // Image analysis cannot directly confirm odor.
-  // Manual verification is required.
   // ========================================================
 
   if (type.includes("foul odor") || type === "smell") {
-    return "A possible odor-related spoilage indicator was detected. Verify the product manually and remove it from sellable inventory if an abnormal odor is confirmed.";
+    return (
+      "A possible odor-related spoilage indicator " +
+      "was detected. Verify the product manually " +
+      "and remove it from sellable inventory if " +
+      "an abnormal odor is confirmed."
+    );
   }
 
   // ========================================================
@@ -218,7 +245,11 @@ function getRecommendation(prediction, spoilageType) {
   // ========================================================
 
   if (type.includes("expiration date")) {
-    return "Verify the product's actual expiration or date information manually before making an inventory decision.";
+    return (
+      "Verify the product's actual expiration or " +
+      "date information manually before making " +
+      "an inventory decision."
+    );
   }
 
   // ========================================================
@@ -226,14 +257,23 @@ function getRecommendation(prediction, spoilageType) {
   // ========================================================
 
   if (type.includes("crystallization")) {
-    return "Inspect the product and its storage condition. Separate it from normal inventory if crystallization is associated with quality deterioration.";
+    return (
+      "Inspect the product and its storage condition. " +
+      "Separate it from normal inventory if " +
+      "crystallization is associated with quality " +
+      "deterioration."
+    );
   }
 
   // ========================================================
   // FALLBACK
   // ========================================================
 
-  return "The product is classified as rotten. Separate it from sellable inventory and conduct further inspection before handling.";
+  return (
+    "The product is classified as rotten. " +
+    "Separate it from sellable inventory and " +
+    "conduct further inspection before handling."
+  );
 }
 
 // ============================================================
@@ -248,15 +288,21 @@ router.post("/analyze", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       success: false,
+
       message: "No image was uploaded.",
     });
   }
 
   console.log("=================================");
+
   console.log("Image received:", req.file.originalname);
+
   console.log("Saved to:", req.file.path);
+
   console.log("Image type:", req.file.mimetype);
+
   console.log("Image size:", req.file.size, "bytes");
+
   console.log("=================================");
 
   // ========================================================
@@ -274,26 +320,34 @@ router.post("/analyze", upload.single("image"), (req, res) => {
   );
 
   // ========================================================
-  // PREDICT.PY PATH
+  // NEW COMPLETE ML PIPELINE
   // ========================================================
 
-  const predictScript = path.join(__dirname, "..", "..", "ml", "predict.py");
+  const pipelineScript = path.join(
+    __dirname,
+    "..",
+    "..",
+    "ml",
+    "analyze_spoilage_pipeline.py",
+  );
 
   console.log("Python:", pythonPath);
-  console.log("Predict script:", predictScript);
-  console.log("Starting ML prediction...");
+
+  console.log("Pipeline script:", pipelineScript);
+
+  console.log("Starting spoilage pipeline...");
 
   // ========================================================
   // RUN PYTHON
   // ========================================================
 
-  const python = spawn(pythonPath, [predictScript, req.file.path]);
+  const python = spawn(pythonPath, [pipelineScript, req.file.path]);
 
   let output = "";
   let errorOutput = "";
 
   // ========================================================
-  // PYTHON NORMAL OUTPUT
+  // PYTHON STDOUT
   // ========================================================
 
   python.stdout.on("data", (data) => {
@@ -301,7 +355,10 @@ router.post("/analyze", upload.single("image"), (req, res) => {
   });
 
   // ========================================================
-  // PYTHON ERROR OUTPUT
+  // PYTHON STDERR
+  //
+  // Hugging Face warnings may appear here even when the
+  // prediction succeeds.
   // ========================================================
 
   python.stderr.on("data", (data) => {
@@ -315,11 +372,13 @@ router.post("/analyze", upload.single("image"), (req, res) => {
   python.on("error", (error) => {
     console.error("Could not start Python process:", error.message);
 
-    fs.unlink(req.file.path, () => {});
+    deleteTemporaryImage(req.file.path);
 
     return res.status(500).json({
       success: false,
-      message: "Could not start the ML prediction process.",
+
+      message: "Could not start the ML pipeline.",
+
       error: error.message,
     });
   });
@@ -330,142 +389,231 @@ router.post("/analyze", upload.single("image"), (req, res) => {
 
   python.on("close", async (code) => {
     console.log("Python process finished.");
+
     console.log("Exit code:", code);
 
-    // ======================================================
+    // ====================================================
     // PYTHON FAILED
-    // ======================================================
+    // ====================================================
 
     if (code !== 0) {
       console.error("Python error:", errorOutput);
 
-      fs.unlink(req.file.path, (err) => {
-        if (err) {
-          console.error("Could not delete temporary image:", err.message);
-        }
-      });
+      deleteTemporaryImage(req.file.path);
 
       return res.status(500).json({
         success: false,
-        message: "ML prediction failed.",
+
+        message: "ML pipeline failed.",
+
         error: errorOutput,
       });
     }
 
     console.log("Python output:", output);
 
-    // ======================================================
-    // EXTRACT PYTORCH PREDICTION
-    // ======================================================
+    // ====================================================
+    // PARSE JSON OUTPUT
+    // ====================================================
 
-    const predictionMatch = output.match(/Prediction:\s*(Fresh|Rotten)/i);
+    let mlResult;
 
-    // ======================================================
-    // EXTRACT PYTORCH CONFIDENCE
-    // ======================================================
+    try {
+      const lines = output
+        .trim()
+        .split(/\r?\n/)
+        .filter((line) => line.trim());
 
-    const confidenceMatch = output.match(/Confidence:\s*([0-9.]+)/i);
+      let parsed = null;
 
-    // ======================================================
-    // INVALID PYTHON OUTPUT
-    // ======================================================
+      // Search from the final line backwards.
+      // This protects us if Python prints another
+      // harmless message before the JSON.
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          parsed = JSON.parse(lines[i]);
 
-    if (!predictionMatch || !confidenceMatch) {
-      fs.unlink(req.file.path, () => {});
+          break;
+        } catch {
+          // Continue searching upward.
+        }
+      }
+
+      if (!parsed) {
+        throw new Error("No valid JSON result was returned.");
+      }
+
+      mlResult = parsed;
+    } catch (parseError) {
+      console.error("Could not parse ML output:", parseError.message);
+
+      deleteTemporaryImage(req.file.path);
 
       return res.status(500).json({
         success: false,
-        message: "Could not understand the ML prediction.",
+
+        message: "Could not understand the ML pipeline result.",
+
         rawOutput: output,
+
+        error: parseError.message,
       });
     }
 
-    const prediction = predictionMatch[1];
+    console.log("ML status:", mlResult.status);
 
-    const confidence = parseFloat(confidenceMatch[1]);
+    // ====================================================
+    // ML SCRIPT RETURNED ERROR
+    // ====================================================
 
-    console.log("PyTorch prediction:", prediction);
+    if (mlResult.success === false) {
+      deleteTemporaryImage(req.file.path);
 
-    console.log("PyTorch confidence:", confidence);
+      return res.status(500).json({
+        success: false,
 
-    // ======================================================
-    // CONFIDENCE THRESHOLD
-    // ======================================================
-    //
-    // Below 90%:
-    // → Uncertain
-    // → Do NOT call Nyckel
-    // → Recommend manual inspection
-    //
-    // ======================================================
-
-    if (confidence < CONFIDENCE_THRESHOLD) {
-      console.log("Prediction is below confidence threshold.");
-
-      console.log("Threshold:", CONFIDENCE_THRESHOLD);
-
-      console.log("Confidence:", confidence);
-
-      const recommendation = getRecommendation("Uncertain", null);
-
-      // Delete temporary image
-      fs.unlink(req.file.path, (err) => {
-        if (err) {
-          console.error("Could not delete temporary image:", err.message);
-        } else {
-          console.log("Temporary image deleted.");
-        }
+        message: mlResult.message || "ML analysis failed.",
       });
+    }
+
+    // ====================================================
+    // NON-PRODUCE
+    //
+    // CLIP stops the request before KNN / Decision Tree.
+    // ====================================================
+
+    if (mlResult.status === "rejected_non_produce") {
+      console.log("Image rejected as non-produce.");
+
+      deleteTemporaryImage(req.file.path);
 
       return res.json({
         success: true,
 
-        // Final decision shown to user
-        prediction: "Uncertain",
+        status: "rejected_non_produce",
 
-        // Original PyTorch output
-        originalPrediction: prediction,
+        prediction: null,
 
-        confidence: confidence,
+        message: mlResult.message,
 
-        confidenceThreshold: CONFIDENCE_THRESHOLD,
+        produceValidation: mlResult.produce_validation,
+
+        novelty: null,
+
+        treeProbability: null,
 
         spoilageType: null,
 
         spoilageConfidence: null,
 
-        recommendation: recommendation,
+        recommendation:
+          "Please upload a clear image of a fruit or vegetable product.",
       });
     }
 
-    // ======================================================
-    // FRESH → DO NOT CALL NYCKEL
-    // ======================================================
+    // ====================================================
+    // UNFAMILIAR PRODUCE
+    //
+    // CLIP accepted it as produce, but its CNN feature
+    // representation falls outside the calibrated p99
+    // KNN range.
+    // ====================================================
+
+    if (mlResult.status === "unfamiliar_produce") {
+      console.log("Produce detected, but image is outside familiar ML range.");
+
+      deleteTemporaryImage(req.file.path);
+
+      return res.json({
+        success: true,
+
+        status: "unfamiliar_produce",
+
+        prediction: "Uncertain",
+
+        message: mlResult.message,
+
+        produceValidation: mlResult.produce_validation,
+
+        novelty: mlResult.ood,
+
+        treeProbability: null,
+
+        spoilageType: null,
+
+        spoilageConfidence: null,
+
+        recommendation:
+          "The product appears to be produce, " +
+          "but it is outside the model's familiar " +
+          "training range. Manual inspection is " +
+          "recommended.",
+      });
+    }
+
+    // ====================================================
+    // EXPECT CLASSIFIED RESULT
+    // ====================================================
+
+    if (mlResult.status !== "classified" || !mlResult.spoilage) {
+      console.error("Unexpected ML result:", mlResult);
+
+      deleteTemporaryImage(req.file.path);
+
+      return res.status(500).json({
+        success: false,
+
+        message: "The ML pipeline returned an unexpected result.",
+
+        mlResult: mlResult,
+      });
+    }
+
+    // ====================================================
+    // EXTRACT DECISION TREE RESULT
+    // ====================================================
+
+    const prediction = mlResult.spoilage.prediction;
+
+    const treeProbability = mlResult.spoilage.tree_probability;
+
+    console.log("Decision Tree prediction:", prediction);
+
+    console.log("Decision Tree probability:", treeProbability);
+
+    console.log("Novelty level:", mlResult.ood?.novelty_level);
+
+    // ====================================================
+    // FRESH
+    //
+    // DO NOT CALL NYCKEL.
+    // ====================================================
 
     if (prediction.toLowerCase() === "fresh") {
-      console.log("Food is fresh. Nyckel will NOT be called.");
+      console.log("Product classified as Fresh.");
+
+      console.log("Nyckel will NOT be called.");
 
       const recommendation = getRecommendation(prediction, null);
 
-      console.log("Recommendation:", recommendation);
-
-      // Delete temporary image
-      fs.unlink(req.file.path, (err) => {
-        if (err) {
-          console.error("Could not delete temporary image:", err.message);
-        } else {
-          console.log("Temporary image deleted.");
-        }
-      });
+      deleteTemporaryImage(req.file.path);
 
       return res.json({
         success: true,
 
+        status: "classified",
+
         prediction: prediction,
 
-        confidence: confidence,
+        // Decision Tree probability.
+        // Do not describe this as calibrated confidence.
+        treeProbability: treeProbability,
 
-        confidenceThreshold: CONFIDENCE_THRESHOLD,
+        classProbabilities: mlResult.spoilage.probabilities,
+
+        produceValidation: mlResult.produce_validation,
+
+        novelty: mlResult.ood,
 
         spoilageType: null,
 
@@ -475,94 +623,107 @@ router.post("/analyze", upload.single("image"), (req, res) => {
       });
     }
 
-    // ======================================================
-    // ROTTEN → CALL NYCKEL
-    // ======================================================
+    // ====================================================
+    // ROTTEN
+    //
+    // CALL NYCKEL FOR VISIBLE SPOILAGE INDICATOR.
+    // ====================================================
 
-    console.log("Food is rotten.");
+    if (prediction.toLowerCase() === "rotten") {
+      console.log("Product classified as Rotten.");
 
-    console.log("Calling Nyckel for spoilage identification...");
+      console.log("Calling Nyckel for spoilage identification...");
 
-    try {
-      // ====================================================
-      // GET NYCKEL RESULT
-      // ====================================================
+      try {
+        // =================================================
+        // NYCKEL RESULT
+        // =================================================
 
-      const nyckelResult = await predictSpoilageWithNyckel(req.file.path);
+        const nyckelResult = await predictSpoilageWithNyckel(req.file.path);
 
-      console.log("Nyckel result:", nyckelResult);
+        console.log("Nyckel result:", nyckelResult);
 
-      // ====================================================
-      // EXTRACT NYCKEL VALUES
-      // ====================================================
+        // =================================================
+        // EXTRACT NYCKEL VALUES
+        // =================================================
 
-      const spoilageType = nyckelResult.labelName || nyckelResult.label || null;
+        const spoilageType =
+          nyckelResult.labelName || nyckelResult.label || null;
 
-      const spoilageConfidence = nyckelResult.confidence ?? null;
+        const spoilageConfidence = nyckelResult.confidence ?? null;
 
-      console.log("Spoilage type:", spoilageType);
+        console.log("Spoilage type:", spoilageType);
 
-      console.log("Spoilage confidence:", spoilageConfidence);
+        console.log("Spoilage confidence:", spoilageConfidence);
 
-      // ====================================================
-      // GENERATE RECOMMENDATION
-      // ====================================================
+        // =================================================
+        // RECOMMENDATION
+        // =================================================
 
-      const recommendation = getRecommendation(prediction, spoilageType);
+        const recommendation = getRecommendation(prediction, spoilageType);
 
-      console.log("Recommendation:", recommendation);
+        // =================================================
+        // DELETE TEMP IMAGE
+        // =================================================
 
-      // ====================================================
-      // DELETE TEMPORARY IMAGE
-      // ====================================================
+        deleteTemporaryImage(req.file.path);
 
-      fs.unlink(req.file.path, (err) => {
-        if (err) {
-          console.error("Could not delete temporary image:", err.message);
-        } else {
-          console.log("Temporary image deleted.");
-        }
-      });
+        // =================================================
+        // FINAL RESULT
+        // =================================================
 
-      // ====================================================
-      // RETURN COMBINED RESULT
-      // ====================================================
+        return res.json({
+          success: true,
 
-      return res.json({
-        success: true,
+          status: "classified",
 
-        // PyTorch result
-        prediction: prediction,
+          prediction: prediction,
 
-        confidence: confidence,
+          treeProbability: treeProbability,
 
-        confidenceThreshold: CONFIDENCE_THRESHOLD,
+          classProbabilities: mlResult.spoilage.probabilities,
 
-        // Nyckel result
-        spoilageType: spoilageType,
+          produceValidation: mlResult.produce_validation,
 
-        spoilageConfidence: spoilageConfidence,
+          novelty: mlResult.ood,
 
-        // Decision-support result
-        recommendation: recommendation,
-      });
-    } catch (nyckelError) {
-      console.error(
-        "Nyckel prediction failed:",
-        nyckelError.response?.data || nyckelError.message,
-      );
+          spoilageType: spoilageType,
 
-      // Delete temporary image
-      fs.unlink(req.file.path, () => {});
+          spoilageConfidence: spoilageConfidence,
 
-      return res.status(500).json({
-        success: false,
+          recommendation: recommendation,
+        });
+      } catch (nyckelError) {
+        console.error(
+          "Nyckel prediction failed:",
+          nyckelError.response?.data || nyckelError.message,
+        );
 
-        message: "Nyckel spoilage prediction failed.",
+        deleteTemporaryImage(req.file.path);
 
-        error: nyckelError.response?.data || nyckelError.message,
-      });
+        return res.status(500).json({
+          success: false,
+
+          message: "Nyckel spoilage prediction failed.",
+
+          error: nyckelError.response?.data || nyckelError.message,
+        });
+      }
     }
+
+    // ====================================================
+    // UNEXPECTED DECISION TREE LABEL
+    // ====================================================
+
+    deleteTemporaryImage(req.file.path);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unknown spoilage classification returned.",
+
+      prediction: prediction,
+    });
   });
 });
 

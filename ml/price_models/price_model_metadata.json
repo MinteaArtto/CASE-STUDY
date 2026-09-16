@@ -1,0 +1,24 @@
+{
+  "model_type": "LinearRegression",
+  "source": "Department of Agriculture weekly retail price data",
+  "dataset": "da_weekly_model_final.csv",
+  "features": [
+    "series_key",
+    "change_1w",
+    "change_prev",
+    "change_4w",
+    "deviation_from_4w_mean",
+    "week_of_year"
+  ],
+  "target": "future_price_change",
+  "forecast_formula": "current_price + predicted_change",
+  "horizons": {
+    "1w": 1,
+    "2w": 2,
+    "4w": 4
+  },
+  "test_ratio": 0.2,
+  "split_method": "chronological by unique reporting week",
+  "minimum_series_observations": 16,
+  "baseline": "future price equals current price"
+}
