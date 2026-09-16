@@ -28,6 +28,7 @@ export default function ProductCarousel() {
     loop: true,
     align: "start",
     slidesToScroll: 1,
+    duration: 35,
   });
 
   const API_BASE =
@@ -74,8 +75,8 @@ export default function ProductCarousel() {
         <ChevronLeft className="w-5 h-5 text-ink/60" />
       </button>
 
-      <div className="overflow-hidden flex-1" ref={emblaRef}>
-        <div className="flex gap-4">
+      <div className="overflow-hidden flex-1 py-4 -my-4" ref={emblaRef}>
+        <div className="product-carousel-track flex gap-6 px-3">
           {PRODUCTS.map((product) => (
             (() => {
               const forecast = prices[product.name];
@@ -88,12 +89,13 @@ export default function ProductCarousel() {
               return (
             <div
               key={product.name}
-              className="flex-[0_0_calc(33.333%-11px)] min-w-0 bg-cream-light/70 rounded-2xl p-6 text-center flex flex-col items-center"
+              tabIndex={0}
+              className="product-card group min-w-0 shrink-0 min-h-64 rounded-2xl bg-cream-light/70 px-12 py-8 text-center flex flex-col items-center justify-center transition-all duration-300 hover:-translate-y-2 hover:shadow-lg focus-visible:-translate-y-2 focus-visible:shadow-lg"
             >
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-16 h-16 object-contain mb-3"
+                className="w-16 h-16 object-contain mb-3 transition-transform duration-200 group-hover:scale-110"
               />
               <h4 className="font-display font-bold">{product.name}</h4>
               <p className="text-lg font-bold mt-1">

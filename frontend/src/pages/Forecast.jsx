@@ -590,7 +590,7 @@ function SimpleLineChart({
       ref={svgRef}
       viewBox={`0 0 ${w} ${h}`}
       preserveAspectRatio="xMidYMid meet"
-      className="w-full h-[360px]"
+      className="forecast-chart w-full h-[360px]"
       onMouseMove={
         handleMove
       }

@@ -23,6 +23,199 @@ html {
 
 body {
   @apply font-body text-ink bg-cream-light;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Theme colors are applied to the existing Tailwind utility classes so images
+   and their original colors remain unchanged. */
+.dark body {
+  background-color: #17181a;
+  color: #e5e7eb;
+}
+
+.dark .bg-cream-light,
+.dark .bg-cream-light\/70,
+.dark .bg-cream-light\/90 {
+  background-color: #242628;
+}
+
+.dark .bg-cream,
+.dark .from-cream {
+  background-color: #202124;
+  --tw-gradient-from: #202124;
+}
+
+.dark .to-cream-light {
+  --tw-gradient-to: #17181a;
+}
+
+.dark .from-cream-light {
+  --tw-gradient-from: #242628;
+  --tw-gradient-to: #17181a;
+}
+
+.dark .from-mint {
+  --tw-gradient-from: #34383b;
+  --tw-gradient-to: #17181a;
+}
+
+.dark .via-mint-light {
+  --tw-gradient-via: #2b2e31;
+}
+
+.dark .to-mint {
+  --tw-gradient-to: #34383b;
+}
+
+.dark .to-white {
+  --tw-gradient-to: #17181a;
+}
+
+.dark .bg-white,
+.dark .bg-white\/60,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/90 {
+  background-color: #2d3033;
+}
+
+.dark .bg-mint,
+.dark .bg-mint\/70 {
+  background-color: #34383b;
+}
+
+.dark .bg-teal-dark {
+  background-color: #202124;
+}
+
+.product-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: 0 0 calc((100% - 4.5rem) / 3);
+}
+
+@media (min-width: 768px) {
+  .product-card {
+    flex-basis: calc((100% - 4.5rem) / 2.5);
+  }
+}
+
+.product-carousel-track {
+  column-gap: 1.5rem;
+  box-sizing: border-box;
+}
+
+.product-card::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 18% 18%, rgb(212 255 224 / 80%) 0 2px, transparent 3px),
+    radial-gradient(circle at 78% 28%, rgb(172 240 190 / 60%) 0 2px, transparent 3px),
+    radial-gradient(circle at 62% 82%, rgb(116 194 139 / 45%) 0 2px, transparent 3px),
+    linear-gradient(145deg, rgb(184 235 198 / 85%), rgb(63 111 107 / 30%));
+  content: "";
+  opacity: 0;
+  transform: scale(1.08) rotate(-2deg);
+  transition: opacity 300ms ease, transform 500ms ease;
+}
+
+.product-card:hover::before,
+.product-card:focus-visible::before {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.product-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .product-card::before {
+  background:
+    radial-gradient(circle at 18% 18%, rgb(238 211 255 / 80%) 0 2px, transparent 3px),
+    radial-gradient(circle at 78% 28%, rgb(192 147 255 / 65%) 0 2px, transparent 3px),
+    radial-gradient(circle at 62% 82%, rgb(139 92 246 / 55%) 0 2px, transparent 3px),
+    linear-gradient(145deg, rgb(126 87 168 / 85%), rgb(45 35 70 / 75%));
+}
+
+.dark .text-ink {
+  color: #e5e7eb;
+}
+
+.dark .text-ink\/80 {
+  color: rgb(229 231 235 / 80%);
+}
+
+.dark .text-ink\/70 {
+  color: rgb(209 213 219 / 75%);
+}
+
+.dark .text-ink\/65 {
+  color: rgb(209 213 219 / 70%);
+}
+
+.dark .text-ink\/60 {
+  color: rgb(156 163 175 / 80%);
+}
+
+.dark .text-ink\/55,
+.dark .text-ink\/50 {
+  color: rgb(156 163 175 / 70%);
+}
+
+.dark .text-ink\/45,
+.dark .text-ink\/40 {
+  color: rgb(156 163 175 / 60%);
+}
+
+.dark .text-cream-light {
+  color: #e5e7eb;
+}
+
+.dark .border-ink\/5,
+.dark .border-ink\/10,
+.dark .border-ink\/15 {
+  border-color: rgb(244 241 223 / 15%);
+}
+
+.dark .dark-mode-toggle {
+  background-color: #2d3033;
+  border-color: rgb(244 241 223 / 20%);
+  color: #f4d77a;
+}
+
+/* Keep the classifier image preview surface visible without changing the
+   classifier component or any uploaded image colors. */
+.dark .w-72.h-72.rounded-full.bg-cream-light {
+  background-color: #9ca3af;
+}
+
+/* The classifier uses an inline light gradient, so override only its page
+   surface while leaving the product preview image untouched. */
+.dark [style*="linear-gradient(180deg"] {
+  background: linear-gradient(180deg, #202124 0%, #34383b 100%) !important;
+}
+
+.dark .forecast-chart stop:first-child {
+  stop-color: #2d3033;
+}
+
+.dark .forecast-chart stop:last-child {
+  stop-color: #242628;
+}
+
+.dark .forecast-chart rect {
+  stroke: #111315;
+}
+
+.dark .forecast-chart line {
+  stroke: #9ca3af;
+}
+
+.dark .forecast-chart text {
+  fill: #d1d5db !important;
 }
 
 /* visible keyboard focus, kept subtle */

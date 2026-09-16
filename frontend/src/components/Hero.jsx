@@ -38,15 +38,12 @@ export default function Hero() {
           <Mic className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/40" />
         </div>
 
-        <div className="mt-14 relative">
+        <div className="mt-14 max-w-6xl mx-auto grid md:grid-cols-[minmax(0,1fr)_24rem] gap-8 items-center text-left">
           <ProductCarousel />
-          {/* DESKTOP VERSION - shows on md screens and up */}
-          <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 translate-x-6">
+          <div className="flex justify-center">
             <HowItWorksCard />
           </div>
         </div>
-
-        {/* MOBILE VERSION - REMOVED */}
       </div>
 
       <div className="max-w-6xl mx-auto px-6 pb-20 text-center">
