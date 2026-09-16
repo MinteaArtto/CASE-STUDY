@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { Bell, CircleHelp, LockKeyhole, X } from "lucide-react";
 
 const OVERVIEW_CARDS = [
@@ -89,6 +90,13 @@ export default function User({ onClose, user, onLogout }) {
             >
               Log out
             </button>
+            <Link
+              to="/dashboard"
+              onClick={onClose}
+              className="block mt-3 text-sm text-cream-light/70 hover:text-cream-light transition-colors"
+            >
+              Open dashboard
+            </Link>
           </aside>
 
           <main className="p-6 md:p-10">

@@ -4,6 +4,7 @@ import Classifier from "./pages/Classifier";
 import Forecast from "./pages/Forecast";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import UserDashboard from "./pages/UserDashboard";
 
 function Placeholder({ label }) {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/forecast" element={<Forecast />} />
         <Route path="/classifier" element={<Classifier />} />
+        <Route path="/dashboard" element={<UserDashboard />} />
         <Route path="/recommendation" element={<Placeholder label="Recommendation" />} />
         <Route path="/about" element={<Placeholder label="About" />} />
       </Routes>

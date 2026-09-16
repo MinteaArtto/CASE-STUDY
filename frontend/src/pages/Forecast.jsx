@@ -2,6 +2,7 @@ import React, {
   useState,
   useEffect,
   useRef,
+  useMemo,
 } from "react";
 
 import Header from "../components/Header";
@@ -13,6 +14,7 @@ import Footer from "../components/Footer";
 
 function SimpleLineChart({
   data = [],
+  unit = "unit",
 }) {
   const w = 1200;
   const h = 420;
@@ -78,65 +80,50 @@ function SimpleLineChart({
 
   /* ==========================================================
      X-AXIS LAYOUT
-     
-     Historical = approximately 70%
-     Forecast   = approximately 30%
 
-     This gives the future points enough horizontal room.
+     Use each point's actual relative-week value.
+
+     Historical examples:
+     -11, -10, ... -1, 0
+
+     Forecast examples:
+     +1, +2, +4
+
+     This keeps +4w twice as far from +2w as +2w is from +1w.
      ========================================================== */
 
-  const historicalWidth =
-    plotWidth * 0.70;
+  const xValues =
+    data.map(
+      (item) =>
+        Number(item.x) || 0
+    );
 
-  const forecastWidth =
-    plotWidth -
-    historicalWidth;
+  const minX =
+    Math.min(
+      ...xValues
+    );
 
-  const historicalStep =
-    currentIndex > 0
-      ? historicalWidth /
-        currentIndex
-      : 0;
+  const maxX =
+    Math.max(
+      ...xValues
+    );
 
-  const forecastStep =
-    futureCount > 0
-      ? forecastWidth /
-        futureCount
-      : 0;
+  const xRange =
+    maxX - minX || 1;
 
   const computeX = (
     index
   ) => {
-    /*
-     * Historical data.
-     */
-    if (
-      index <= currentIndex
-    ) {
-      return (
-        plotLeft +
-        index *
-          historicalStep
-      );
-    }
-
-    /*
-     * Forecast data.
-
-     * +1w = first forecast position
-     * +2w = second
-     * +3w = third
-     * +4w = fourth
-     */
-    const futureNumber =
-      index -
-      currentIndex;
+    const xValue =
+      Number(
+        data[index]?.x
+      ) || 0;
 
     return (
       plotLeft +
-      historicalWidth +
-      futureNumber *
-        forecastStep
+      ((xValue - minX) /
+        xRange) *
+        plotWidth
     );
   };
 
@@ -174,31 +161,6 @@ function SimpleLineChart({
 
   const range =
     max - min || 1;
-
-  const computeY = (
-    index
-  ) => {
-    const value =
-      Number(
-        data[index].y
-      ) || 0;
-
-    return (
-      chartBottom -
-      ((value - min) /
-        range) *
-        plotHeight
-    );
-  };
-
-  const computeXY = (
-    index
-  ) => {
-    return {
-      x: computeX(index),
-      y: computeY(index),
-    };
-  };
 
   /* ==========================================================
      Y-AXIS TICKS
@@ -262,6 +224,34 @@ function SimpleLineChart({
         tickStep
     ) *
     tickStep;
+
+  /*
+   * Plot points and Y-axis ticks use the same Y range.
+   */
+  const computeY = (
+    index
+  ) => {
+    const value =
+      Number(
+        data[index]?.y
+      ) || 0;
+
+    return (
+      chartBottom -
+      ((value - yStart) /
+        (yEnd - yStart || 1)) *
+        plotHeight
+    );
+  };
+
+  const computeXY = (
+    index
+  ) => {
+    return {
+      x: computeX(index),
+      y: computeY(index),
+    };
+  };
 
   const yTicks = [];
 
@@ -409,52 +399,46 @@ function SimpleLineChart({
 
   /* ==========================================================
      WEEK GRID INDICES
-     
-     Historical:
-       every 4 weeks
 
-     Forecast:
-       every forecast week
-
-     Current:
-       always included
+     The chart contains the latest 12 historical weeks. Label
+     the past at odd-week intervals, then show each forecast
+     returned by the pricing route.
      ========================================================== */
 
   const gridIndices =
     new Set();
 
   /*
-   * Historical grid every 4 weeks.
-   */
-  for (
-    let index = 0;
-    index <= currentIndex;
-    index += 4
-  ) {
-    gridIndices.add(
-      index
-    );
-  }
-
-  /*
-   * Always show first historical point.
-   */
-  gridIndices.add(0);
-
-  /*
-   * Always show Current.
-   */
-  gridIndices.add(
-    currentIndex
-  );
-
-  /*
-   * Forecast points each get their own vertical grid line.
+   * Use actual relative-week values for historical labels.
+   * Show approximately every other historical week, Current,
+   * and every forecast point.
    */
   data.forEach(
     (item, index) => {
+      const week =
+        Number(item.x);
+
       if (
         item.future
+      ) {
+        gridIndices.add(
+          index
+        );
+        return;
+      }
+
+      if (
+        week === 0
+      ) {
+        gridIndices.add(
+          index
+        );
+        return;
+      }
+
+      if (
+        Number.isFinite(week) &&
+        Math.abs(week) % 2 === 1
       ) {
         gridIndices.add(
           index
@@ -477,24 +461,36 @@ function SimpleLineChart({
 
   const getWeekLabel =
     (index) => {
-      const difference =
-        index -
-        currentIndex;
+      const item =
+        data[index];
 
       if (
-        difference ===
-        0
+        item?.future &&
+        item.forecastWeek
+      ) {
+        return `+${item.forecastWeek}w`;
+      }
+
+      const week =
+        Number(
+          item?.x
+        );
+
+      if (
+        week === 0
       ) {
         return "Current";
       }
 
       if (
-        difference < 0
+        Number.isFinite(week)
       ) {
-        return `${difference}w`;
+        return week > 0
+          ? `+${week}w`
+          : `${week}w`;
       }
 
-      return `+${difference}w`;
+      return "";
     };
 
   /* ==========================================================
@@ -1111,14 +1107,17 @@ function SimpleLineChart({
              -------------------------------------------------- */
 
           else {
-            const difference =
-              hoverIdx -
-              currentIndex;
+            const week =
+              Number(
+                item?.x
+              );
 
             label =
-              difference < 0
-                ? `${difference}w`
-                : `+${difference}w`;
+              Number.isFinite(week)
+                ? week > 0
+                  ? `+${week}w`
+                  : `${week}w`
+                : "Historical";
           }
 
           /* --------------------------------------------------
@@ -1254,7 +1253,7 @@ function SimpleLineChart({
                 {formatPrice(
                   item.y
                 )}{" "}
-                per kg
+                per {unit}
               </text>
             </g>
           );
@@ -1363,6 +1362,10 @@ export default function Forecast() {
     history,
     setHistory,
   ] = useState([]);
+  const [
+    historyCategory,
+    setHistoryCategory,
+  ] = useState("");
 
   const [
     loading,
@@ -1373,6 +1376,7 @@ export default function Forecast() {
     error,
     setError,
   ] = useState(null);
+  const [productSearch, setProductSearch] = useState("");
 
   /* ==========================================================
      PRODUCTS
@@ -1399,16 +1403,13 @@ export default function Forecast() {
             availableProducts
           );
 
-          if (
-            availableProducts.length >
-            0
-          ) {
+          if (availableProducts.length > 0) {
             setSelectedProduct(
-              availableProducts[
-                0
-              ].product
+              availableProducts[0].series_key
             );
           }
+        } else {
+          throw new Error(data?.message || "Failed to retrieve products.");
         }
       })
       .catch((err) => {
@@ -1432,26 +1433,17 @@ export default function Forecast() {
 
     setLoading(true);
     setError(null);
+    setHistoryCategory("");
 
-    const forecastPromise =
-      fetch(
-        `${API_BASE}/api/prices/forecast?product=${encodeURIComponent(
-          selectedProduct
-        )}`
-      ).then(
-        (response) =>
-          response.json()
-      );
+    const forecastPromise = fetch(`${API_BASE}/api/prices/forecast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seriesKey: selectedProduct }),
+    }).then((response) => response.json());
 
-    const historyPromise =
-      fetch(
-        `${API_BASE}/api/prices/history?product=${encodeURIComponent(
-          selectedProduct
-        )}&type=weekly`
-      ).then(
-        (response) =>
-          response.json()
-      );
+    const historyPromise = fetch(
+      `${API_BASE}/api/prices/history?seriesKey=${encodeURIComponent(selectedProduct)}`,
+    ).then((response) => response.json());
 
     Promise.all([
       forecastPromise,
@@ -1471,9 +1463,31 @@ export default function Forecast() {
                 "Failed to fetch forecast"
             );
           } else {
-            setForecast(
-              forecastData
-            );
+            const model = forecastData.forecast;
+            setForecast({
+              weekly: {
+                latestRecordedPrice: model.current_price,
+                oneWeek: {
+                  price: model.forecasts?.["1w"]?.predicted_price,
+                  percentageChange: getPercentageChange(
+                    model.current_price,
+                    model.forecasts?.["1w"]?.predicted_price,
+                  ),
+                },
+                twoWeek: {
+                  price: model.forecasts?.["2w"]?.predicted_price,
+                },
+              },
+              monthly: {
+                oneMonth: {
+                  price: model.forecasts?.["4w"]?.predicted_price,
+                  percentageChange: getPercentageChange(
+                    model.current_price,
+                    model.forecasts?.["4w"]?.predicted_price,
+                  ),
+                },
+              },
+            });
           }
 
           if (
@@ -1482,10 +1496,11 @@ export default function Forecast() {
           ) {
             setHistory([]);
           } else {
-            setHistory(
-              historyData.history ||
-                []
-            );
+            setHistoryCategory(historyData.category || "");
+            setHistory((historyData.history || []).map((row) => ({
+              ...row,
+              date: row.weekStart,
+            })));
           }
         }
       )
@@ -1505,21 +1520,82 @@ export default function Forecast() {
     API_BASE,
   ]);
 
+  const selectedProductInfo = products.find(
+    (product) => product.series_key === selectedProduct,
+  );
+  const productCategory =
+    selectedProductInfo?.category ||
+    historyCategory;
+
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    if (!query) return products;
+
+    return [...products]
+      .map((product) => ({
+        product,
+        score: productSearchScore(
+          query,
+          `${product.category} ${product.commodity} ${product.specification}`,
+        ),
+      }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ product }) => product);
+  }, [productSearch, products]);
+
   /* ==========================================================
      HISTORICAL DATA
      ========================================================== */
 
+  const visibleHistory =
+    history.slice(-12);
+
+  const latestHistoryDate =
+    visibleHistory.length > 0
+      ? new Date(
+          visibleHistory[
+            visibleHistory.length - 1
+          ].date
+        )
+      : null;
+
+  const MILLISECONDS_PER_WEEK =
+    7 * 24 * 60 * 60 * 1000;
+
   const chartData =
-    history.map(
-      (row, index) => ({
-        x: index,
-        y:
-          Number(
-            row.price
-          ) || 0,
-        date: row.date,
-        future: false,
-      })
+    visibleHistory.map(
+      (row) => {
+        const rowDate =
+          new Date(
+            row.date
+          );
+
+        const relativeWeek =
+          latestHistoryDate &&
+          !Number.isNaN(
+            rowDate.getTime()
+          ) &&
+          !Number.isNaN(
+            latestHistoryDate.getTime()
+          )
+            ? Math.round(
+                (rowDate.getTime() -
+                  latestHistoryDate.getTime()) /
+                  MILLISECONDS_PER_WEEK
+              )
+            : 0;
+
+        return {
+          x: relativeWeek,
+          y:
+            Number(
+              row.price
+            ) || 0,
+          date: row.date,
+          future: false,
+        };
+      }
     );
 
   let chartWithFuture =
@@ -1530,10 +1606,7 @@ export default function Forecast() {
   /* ==========================================================
      FORECAST DATA
      
-     +1w = actual weekly prediction
-     +2w = interpolation
-     +3w = interpolation
-     +4w = actual monthly prediction
+     +1w, +2w, and +4w come directly from priceRoutes.
      ========================================================== */
 
   const oneWeekPrice =
@@ -1541,7 +1614,12 @@ export default function Forecast() {
       ?.oneWeek?.price ??
     null;
 
-  const oneMonthPrice =
+  const twoWeekPrice =
+    forecast?.weekly
+      ?.twoWeek?.price ??
+    null;
+
+  const fourWeekPrice =
     forecast?.monthly
       ?.oneMonth?.price ??
     null;
@@ -1566,131 +1644,36 @@ export default function Forecast() {
        BOTH WEEKLY + MONTHLY FORECAST AVAILABLE
        ======================================================== */
 
-    if (
-      oneWeekPrice !==
-        null &&
-      oneMonthPrice !==
-        null
-    ) {
-      const startPrice =
-        Number(
-          oneWeekPrice
-        );
-
-      const endPrice =
-        Number(
-          oneMonthPrice
-        );
-
-      /*
-       * Interpolate the middle two weeks.
-       */
-
-      const week2 =
-        startPrice +
-        (endPrice -
-          startPrice) *
-          (1 / 3);
-
-      const week3 =
-        startPrice +
-        (endPrice -
-          startPrice) *
-          (2 / 3);
-
-      const startingIndex =
-        chartWithFuture.length;
-
-      /*
-       * +1w
-       */
+    if (oneWeekPrice !== null) {
       chartWithFuture.push({
-        x: startingIndex,
-        y: startPrice,
+        x: 1,
+        y: Number(oneWeekPrice),
         date: "+1w",
         future: true,
         forecastWeek: 1,
       });
+    }
 
-      /*
-       * +2w
-       */
+    if (twoWeekPrice !== null) {
       chartWithFuture.push({
-        x:
-          startingIndex +
-          1,
-        y: week2,
+        x: 2,
+        y: Number(twoWeekPrice),
         date: "+2w",
         future: true,
         forecastWeek: 2,
       });
+    }
 
-      /*
-       * +3w
-       */
+    if (fourWeekPrice !== null) {
       chartWithFuture.push({
-        x:
-          startingIndex +
-          2,
-        y: week3,
-        date: "+3w",
-        future: true,
-        forecastWeek: 3,
-      });
-
-      /*
-       * +4w
-       */
-      chartWithFuture.push({
-        x:
-          startingIndex +
-          3,
-        y: endPrice,
+        x: 4,
+        y: Number(fourWeekPrice),
         date: "+4w",
         future: true,
         forecastWeek: 4,
       });
     }
 
-    /* ========================================================
-       ONLY WEEKLY FORECAST AVAILABLE
-       ======================================================== */
-
-    else if (
-      oneWeekPrice !==
-      null
-    ) {
-      chartWithFuture.push({
-        x:
-          chartWithFuture.length,
-        y: Number(
-          oneWeekPrice
-        ),
-        date: "+1w",
-        future: true,
-        forecastWeek: 1,
-      });
-    }
-
-    /* ========================================================
-       ONLY MONTHLY FORECAST AVAILABLE
-       ======================================================== */
-
-    else if (
-      oneMonthPrice !==
-      null
-    ) {
-      chartWithFuture.push({
-        x:
-          chartWithFuture.length,
-        y: Number(
-          oneMonthPrice
-        ),
-        date: "+4w",
-        future: true,
-        forecastWeek: 4,
-      });
-    }
   }
 
   /* ==========================================================
@@ -1735,36 +1718,44 @@ export default function Forecast() {
 
         <section className="mt-10 flex flex-col items-center gap-6">
 
-          <div className="max-w-md w-full">
-            <select
-              value={
-                selectedProduct ||
-                ""
-              }
-              onChange={(event) =>
-                setSelectedProduct(
-                  event.target.value
-                )
-              }
-              className="w-full bg-white/80 border border-ink/10 rounded-full py-3 px-4 text-sm"
-            >
-              {products.map(
-                (product) => (
-                  <option
-                    key={
-                      product.product
-                    }
-                    value={
-                      product.product
-                    }
-                  >
-                    {
-                      product.product
-                    }
-                  </option>
-                )
+          <div className="max-w-2xl w-full">
+            <input
+              type="search"
+              value={productSearch}
+              onChange={(event) => setProductSearch(event.target.value)}
+              placeholder="Search commodities..."
+              className="w-full bg-white/80 border border-ink/10 rounded-full py-3 px-5 text-sm"
+              aria-label="Search commodities"
+            />
+            <div className="mt-3 max-h-44 overflow-y-auto rounded-2xl bg-white/70 border border-ink/10 p-2 grid sm:grid-cols-2 gap-2">
+              {filteredProducts.map((product) => (
+                <button
+                  key={product.series_key}
+                  type="button"
+                  onClick={() => setSelectedProduct(product.series_key)}
+                  className={`text-left rounded-xl px-4 py-3 transition-colors ${
+                    selectedProduct === product.series_key
+                      ? "bg-ink text-cream-light"
+                      : "hover:bg-cream-light"
+                  }`}
+                >
+                  <span className="block text-xs opacity-60">
+                    {product.category}
+                  </span>
+                  <span className="block font-medium mt-1">
+                    {product.commodity}
+                  </span>
+                  <span className="block text-xs opacity-65 mt-1">
+                    {product.specification} · {product.unit}
+                  </span>
+                </button>
+              ))}
+              {!filteredProducts.length && (
+                <p className="sm:col-span-2 px-4 py-3 text-sm text-ink/60">
+                  No matching commodities found.
+                </p>
               )}
-            </select>
+            </div>
           </div>
 
           {/* ==================================================
@@ -1788,6 +1779,21 @@ export default function Forecast() {
               ================================================== */}
 
           <div className="w-full mt-14 relative">
+            <div className="mb-5 text-center">
+              <p className="text-sm text-teal font-medium">
+                {productCategory || "Category"}
+              </p>
+
+              <h2 className="font-display font-bold text-2xl md:text-3xl mt-1">
+                {selectedProductInfo?.commodity || "Loading product..."}
+              </h2>
+
+              {selectedProductInfo?.specification && (
+                <p className="text-sm text-ink/60 mt-1">
+                  {selectedProductInfo.specification} · {selectedProductInfo.unit}
+                </p>
+              )}
+            </div>
 
             {/*
              * Product image sits ABOVE the chart border,
@@ -1802,18 +1808,21 @@ export default function Forecast() {
              */}
 
             <img
-              src={getProductImage(
-                selectedProduct
-              )}
+              src={getProductImage(selectedProductInfo?.commodity)}
               onError={(event) => {
                 event.currentTarget.onerror =
                   null;
 
-                event.currentTarget.src =
-                  "/products/fruit.png";
+                /*
+                 * Do not show an unrelated fallback image.
+                 * If the matching commodity image is missing,
+                 * hide the decorative image instead.
+                 */
+                event.currentTarget.style.display =
+                  "none";
               }}
               alt={
-                selectedProduct ||
+                selectedProductInfo?.commodity ||
                 "Product"
               }
               className="
@@ -1831,6 +1840,7 @@ export default function Forecast() {
 
             <div className="w-full rounded-lg overflow-visible px-0">
               <SimpleLineChart
+                unit={selectedProductInfo?.unit || "unit"}
                 data={
                   chartWithFuture.length
                     ? chartWithFuture
@@ -1871,7 +1881,7 @@ export default function Forecast() {
 
                 <span className="text-sm text-ink/60">
                   {" "}
-                  per kg
+                  per {selectedProductInfo?.unit || "unit"}
                 </span>
               </div>
 
@@ -1896,7 +1906,7 @@ export default function Forecast() {
 
                 <span className="text-sm text-ink/60">
                   {" "}
-                  per kg
+                  per {selectedProductInfo?.unit || "unit"}
                 </span>
 
                 {forecast?.monthly
@@ -1915,7 +1925,7 @@ export default function Forecast() {
 
                     <span className="text-sm text-ink/60">
                       {" "}
-                      per kg
+                      per {selectedProductInfo?.unit || "unit"}
                     </span>
                   </>
                 )}
@@ -1955,9 +1965,38 @@ export default function Forecast() {
    PRODUCT IMAGE
    ============================================================ */
 
-function getProductImage(
+  function getPercentageChange(current, predicted) {
+    if (
+      typeof current !== "number" ||
+      typeof predicted !== "number" ||
+      current === 0
+    ) {
+      return null;
+    }
+
+    return Number((((predicted - current) / current) * 100).toFixed(2));
+  }
+
+  function productSearchScore(query, label) {
+    const normalizedLabel = label.toLowerCase();
+    if (normalizedLabel.includes(query)) return 2;
+
+    const words = normalizedLabel.split(/\s+/);
+    const closeMatch = words.some((word) => {
+      if (Math.abs(word.length - query.length) > 2) return false;
+      let differences = 0;
+      for (let index = 0; index < Math.max(word.length, query.length); index += 1) {
+        if (word[index] !== query[index]) differences += 1;
+      }
+      return differences <= 2;
+    });
+
+    return closeMatch ? 1 : 0;
+  }
+
+  function getProductImage(
   product
-) {
+  ) {
   if (!product) {
     return "/products/fruit.png";
   }
