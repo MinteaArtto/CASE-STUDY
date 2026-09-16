@@ -1,0 +1,101 @@
+﻿series_key,category,commodity,specification,unit,numeric_observations,first_numeric_week,latest_numeric_week,latest_numeric_price,latest_pdf_price,latest_pdf_availability,forecast_eligible_16_plus
+KADIWA RICE-FOR-ALL | P20 Benteng Bigas Meron Naᵃ | (no specification) | kg,KADIWA RICE-FOR-ALL,P20 Benteng Bigas Meron Naᵃ,,kg,63,2025-05-12,2026-08-31,20,20,available,yes
+IMPORTED COMMERCIAL RICE | Basmati | (no specification) | kg,IMPORTED COMMERCIAL RICE,Basmati,,kg,37,2025-11-17,2026-08-31,196.15,196.15,available,yes
+IMPORTED COMMERCIAL RICE | Glutinous | (no specification) | kg,IMPORTED COMMERCIAL RICE,Glutinous,,kg,37,2025-11-17,2026-08-31,61.05,61.05,available,yes
+IMPORTED COMMERCIAL RICE | Japonica/Jasponica | (no specification) | kg,IMPORTED COMMERCIAL RICE,Japonica/Jasponica,,kg,37,2025-11-17,2026-08-31,60.46,60.46,available,yes
+IMPORTED COMMERCIAL RICE | Other Special Rice | White Rice | kg,IMPORTED COMMERCIAL RICE,Other Special Rice,White Rice,kg,37,2025-11-17,2026-08-31,59.54,59.54,available,yes
+IMPORTED COMMERCIAL RICE | Premium | 5% broken | kg,IMPORTED COMMERCIAL RICE,Premium,5% broken,kg,120,2024-01-01,2026-08-31,53.29,53.29,available,yes
+IMPORTED COMMERCIAL RICE | Regular Milled | 20-40% bran streak | kg,IMPORTED COMMERCIAL RICE,Regular Milled,20-40% bran streak,kg,107,2024-02-12,2026-08-31,45.22,45.22,available,yes
+IMPORTED COMMERCIAL RICE | Well Milled | 1-19% bran streak | kg,IMPORTED COMMERCIAL RICE,Well Milled,1-19% bran streak,kg,120,2024-01-01,2026-08-31,47.71,47.71,available,yes
+LOCAL COMMERCIAL RICE | Basmati | (no specification) | kg,LOCAL COMMERCIAL RICE,Basmati,,kg,0,,,,,not sold / no price (-),no
+LOCAL COMMERCIAL RICE | Glutinous | (no specification) | kg,LOCAL COMMERCIAL RICE,Glutinous,,kg,37,2025-11-17,2026-08-31,76.82,76.82,available,yes
+LOCAL COMMERCIAL RICE | Japonica/Jasponica | (no specification) | kg,LOCAL COMMERCIAL RICE,Japonica/Jasponica,,kg,0,,,,,not sold / no price (-),no
+LOCAL COMMERCIAL RICE | Other Special Rice | White Rice | kg,LOCAL COMMERCIAL RICE,Other Special Rice,White Rice,kg,37,2025-11-17,2026-08-31,60.1,60.1,available,yes
+LOCAL COMMERCIAL RICE | Premium | 5% broken | kg,LOCAL COMMERCIAL RICE,Premium,5% broken,kg,120,2024-01-01,2026-08-31,54.1,54.1,available,yes
+LOCAL COMMERCIAL RICE | Regular Milled | 20-40% bran streak | kg,LOCAL COMMERCIAL RICE,Regular Milled,20-40% bran streak,kg,120,2024-01-01,2026-08-31,45.02,45.02,available,yes
+LOCAL COMMERCIAL RICE | Well Milled | 1-19% bran streak | kg,LOCAL COMMERCIAL RICE,Well Milled,1-19% bran streak,kg,120,2024-01-01,2026-08-31,48.6,48.6,available,yes
+"CORN PRODUCTS | Corn (White) | Cob, Glutinous | kg",CORN PRODUCTS,Corn (White),"Cob, Glutinous",kg,120,2024-01-01,2026-08-31,104.53,104.53,available,yes
+"CORN PRODUCTS | Corn (Yellow) | Cob, Sweet Corn | kg",CORN PRODUCTS,Corn (Yellow),"Cob, Sweet Corn",kg,120,2024-01-01,2026-08-31,89.95,89.95,available,yes
+"CORN PRODUCTS | Corn Cracked (Yellow, Feed Grade) | (no specification) | kg",CORN PRODUCTS,"Corn Cracked (Yellow, Feed Grade)",,kg,86,2024-04-29,2026-08-31,45.41,45.41,available,yes
+CORN PRODUCTS | Corn Grits (Feed Grade) | (no specification) | kg,CORN PRODUCTS,Corn Grits (Feed Grade),,kg,94,2024-04-29,2026-08-31,45.41,45.41,available,yes
+"CORN PRODUCTS | Corn Grits (White, Food Grade) | (no specification) | kg",CORN PRODUCTS,"Corn Grits (White, Food Grade)",,kg,73,2024-04-29,2026-08-31,74.44,74.44,available,yes
+"CORN PRODUCTS | Corn Grits (Yellow, Food Grade) | (no specification) | kg",CORN PRODUCTS,"Corn Grits (Yellow, Food Grade)",,kg,58,2024-04-29,2026-08-31,79.17,79.17,available,yes
+LEGUMES | Mungbean | (no specification) | kg,LEGUMES,Mungbean,,kg,34,2025-12-08,2026-08-31,148.31,148.31,available,yes
+FISH PRODUCTS | Alumahan (Indian Mackerel) | Medium (4-6 pcs/kg) | kg,FISH PRODUCTS,Alumahan (Indian Mackerel),Medium (4-6 pcs/kg),kg,120,2024-01-01,2026-08-31,365.13,365.13,available,yes
+"FISH PRODUCTS | Bangus, Large | Large (1-2 pcs) | kg",FISH PRODUCTS,"Bangus, Large",Large (1-2 pcs),kg,112,2024-01-01,2026-08-31,270.4,270.4,available,yes
+"FISH PRODUCTS | Bangus, Medium | Medium (3-4 pcs/kg) | kg",FISH PRODUCTS,"Bangus, Medium",Medium (3-4 pcs/kg),kg,120,2024-01-01,2026-08-31,243.62,243.62,available,yes
+FISH PRODUCTS | Bonito (Frigate Tuna) | (no specification) | kg,FISH PRODUCTS,Bonito (Frigate Tuna),,kg,8,2024-04-15,2026-06-15,280,,not sold / no price (-),no
+"FISH PRODUCTS | Galunggong, Imported | Male, Medium (12-14 pcs/kg) | kg",FISH PRODUCTS,"Galunggong, Imported","Male, Medium (12-14 pcs/kg)",kg,61,2024-01-01,2026-08-17,300,,not sold / no price (-),yes
+"FISH PRODUCTS | Galunggong, Local | Male, Medium (12-14 pcs/kg) | kg",FISH PRODUCTS,"Galunggong, Local","Male, Medium (12-14 pcs/kg)",kg,120,2024-01-01,2026-08-31,322.56,322.56,available,yes
+"FISH PRODUCTS | Salmon Belly, Local | (no specification) | kg",FISH PRODUCTS,"Salmon Belly, Local",,kg,0,,,,,not sold / no price (-),no
+FISH PRODUCTS | Sardines (Tamban) | (no specification) | kg,FISH PRODUCTS,Sardines (Tamban),,kg,105,2024-04-15,2026-08-31,140.6,140.6,available,yes
+"FISH PRODUCTS | Squid (Pusit Bisaya), Local | Medium | kg",FISH PRODUCTS,"Squid (Pusit Bisaya), Local",Medium,kg,81,2024-11-18,2026-08-31,468.41,468.41,available,yes
+"FISH PRODUCTS | Tambakol (Yellow-Fin Tuna), Local | Medium, Fresh or Chilled | kg",FISH PRODUCTS,"Tambakol (Yellow-Fin Tuna), Local","Medium, Fresh or Chilled",kg,105,2024-04-15,2026-08-31,320.52,320.52,available,yes
+FISH PRODUCTS | Tilapia | Medium (5-6 pcs/kg) | kg,FISH PRODUCTS,Tilapia,Medium (5-6 pcs/kg),kg,120,2024-01-01,2026-08-31,156.88,156.88,available,yes
+"BEEF PRODUCTS | Beef Brisket, Local | Meat with Bones | kg",BEEF PRODUCTS,"Beef Brisket, Local",Meat with Bones,kg,120,2024-01-01,2026-08-31,441.01,441.01,available,yes
+"BEEF PRODUCTS | Beef Rump, Local | Lean Meat/ Tapadera | kg",BEEF PRODUCTS,"Beef Rump, Local",Lean Meat/ Tapadera,kg,120,2024-01-01,2026-08-31,494.87,494.87,available,yes
+"BEEF PRODUCTS | Chicken Egg (Brown, Extra Large) | Extra Large | pc",BEEF PRODUCTS,"Chicken Egg (Brown, Extra Large)",Extra Large,pc,89,2024-04-29,2026-08-31,11,11,available,yes
+"BEEF PRODUCTS | Chicken Egg (Brown, Large) | Large | pc",BEEF PRODUCTS,"Chicken Egg (Brown, Large)",Large,pc,97,2024-04-29,2026-08-31,11.07,11.07,available,yes
+"BEEF PRODUCTS | Chicken Egg (Brown, Medium) | Medium | pc",BEEF PRODUCTS,"Chicken Egg (Brown, Medium)",Medium,pc,103,2024-04-29,2026-08-31,10.79,10.79,available,yes
+"BEEF PRODUCTS | Chicken Egg (White, Extra Large) | 66-70 grams/pc | pc",BEEF PRODUCTS,"Chicken Egg (White, Extra Large)",66-70 grams/pc,pc,102,2024-04-29,2026-08-31,9.37,9.37,available,yes
+"BEEF PRODUCTS | Chicken Egg (White, Extra Small) | 46-50 grams/pc | pc",BEEF PRODUCTS,"Chicken Egg (White, Extra Small)",46-50 grams/pc,pc,103,2024-04-29,2026-08-31,6.91,6.91,available,yes
+"BEEF PRODUCTS | Chicken Egg (White, Jumbo) | 71> grams/pc | pc",BEEF PRODUCTS,"Chicken Egg (White, Jumbo)",71> grams/pc,pc,103,2024-04-29,2026-08-31,10.04,10.04,available,yes
+"BEEF PRODUCTS | Chicken Egg (White, Large) | 61-65 grams/pc | pc",BEEF PRODUCTS,"Chicken Egg (White, Large)",61-65 grams/pc,pc,103,2024-04-29,2026-08-31,8.71,8.71,available,yes
+"BEEF PRODUCTS | Chicken Egg (White, Medium) | 56-60 grams/pc | pc",BEEF PRODUCTS,"Chicken Egg (White, Medium)",56-60 grams/pc,pc,103,2024-04-29,2026-08-31,8.09,8.09,available,yes
+"BEEF PRODUCTS | Chicken Egg (White, Pewee) | 41-45 grams/pc | pc",BEEF PRODUCTS,"Chicken Egg (White, Pewee)",41-45 grams/pc,pc,103,2024-04-29,2026-08-31,6.18,6.18,available,yes
+"BEEF PRODUCTS | Chicken Egg (White, Small) | 51-55 grams/pc | pc",BEEF PRODUCTS,"Chicken Egg (White, Small)",51-55 grams/pc,pc,101,2024-04-29,2026-08-31,7.39,7.39,available,yes
+"BEEF PRODUCTS | Pork Belly (Liempo), Imported | (no specification) | kg",BEEF PRODUCTS,"Pork Belly (Liempo), Imported",,kg,30,2026-01-05,2026-08-31,307.27,307.27,available,yes
+"BEEF PRODUCTS | Pork Belly (Liempo), Local | (no specification) | kg",BEEF PRODUCTS,"Pork Belly (Liempo), Local",,kg,30,2026-01-05,2026-08-31,379.2,379.2,available,yes
+"BEEF PRODUCTS | Pork Picnic Shoulder (Kasim), Imported | (no specification) | kg",BEEF PRODUCTS,"Pork Picnic Shoulder (Kasim), Imported",,kg,29,2026-01-05,2026-08-31,241.45,241.45,available,yes
+"BEEF PRODUCTS | Pork Picnic Shoulder (Kasim), Local | (no specification) | kg",BEEF PRODUCTS,"Pork Picnic Shoulder (Kasim), Local",,kg,30,2026-01-05,2026-08-31,325.22,325.22,available,yes
+"BEEF PRODUCTS | Whole Chicken, Local | Fully Dressed | kg",BEEF PRODUCTS,"Whole Chicken, Local",Fully Dressed,kg,120,2024-01-01,2026-08-31,204.74,204.74,available,yes
+LOWLAND VEGETABLES | Ampalaya | 4-5 pcs/kg | kg,LOWLAND VEGETABLES,Ampalaya,4-5 pcs/kg,kg,120,2024-01-01,2026-08-31,192.16,192.16,available,yes
+"LOWLAND VEGETABLES | Chilli (Green), Local | Haba/Panigang | kg",LOWLAND VEGETABLES,"Chilli (Green), Local",Haba/Panigang,kg,33,2025-12-15,2026-08-31,197.2,197.2,available,yes
+LOWLAND VEGETABLES | Eggplant | 3-4 Small Bundles | kg,LOWLAND VEGETABLES,Eggplant,3-4 Small Bundles,kg,120,2024-01-01,2026-08-31,186.32,186.32,available,yes
+LOWLAND VEGETABLES | Native Pechay | 3-4 Small Bundles | kg,LOWLAND VEGETABLES,Native Pechay,3-4 Small Bundles,kg,120,2024-01-01,2026-08-31,202.65,202.65,available,yes
+LOWLAND VEGETABLES | Pole Sitao | 3-4 Small Bundles | kg,LOWLAND VEGETABLES,Pole Sitao,3-4 Small Bundles,kg,120,2024-01-01,2026-08-31,185.41,185.41,available,yes
+LOWLAND VEGETABLES | Squash | Suprema Variety | kg,LOWLAND VEGETABLES,Squash,Suprema Variety,kg,120,2024-01-01,2026-08-31,66.87,66.87,available,yes
+LOWLAND VEGETABLES | Tomato | 15-18 pcs/kg | kg,LOWLAND VEGETABLES,Tomato,15-18 pcs/kg,kg,120,2024-01-01,2026-08-31,108.5,108.5,available,yes
+"HIGHLAND VEGETABLES | Bell Pepper (Green), Local | Medium (151-250gm/pc) | kg",HIGHLAND VEGETABLES,"Bell Pepper (Green), Local",Medium (151-250gm/pc),kg,110,2024-02-12,2026-08-31,275.2,275.2,available,yes
+"HIGHLAND VEGETABLES | Bell Pepper (Red), Local | Medium (151-250gm/pc) | kg",HIGHLAND VEGETABLES,"Bell Pepper (Red), Local",Medium (151-250gm/pc),kg,110,2024-02-12,2026-08-31,246.71,246.71,available,yes
+"HIGHLAND VEGETABLES | Broccoli, Local | Medium (8-10 cm diameter/bunch hd) | kg",HIGHLAND VEGETABLES,"Broccoli, Local",Medium (8-10 cm diameter/bunch hd),kg,101,2024-04-15,2026-08-31,245.71,245.71,available,yes
+HIGHLAND VEGETABLES | Cabbage (Rare Ball) | 510 gm - 1 kg/head | kg,HIGHLAND VEGETABLES,Cabbage (Rare Ball),510 gm - 1 kg/head,kg,115,2024-01-08,2026-08-31,147.87,147.87,available,yes
+HIGHLAND VEGETABLES | Cabbage (Scorpio) | 750 gm - 1 kg/head | kg,HIGHLAND VEGETABLES,Cabbage (Scorpio),750 gm - 1 kg/head,kg,115,2024-01-01,2026-08-31,140.99,140.99,available,yes
+HIGHLAND VEGETABLES | Cabbage (Wonder Ball) | 510 gm - 1 kg/head | kg,HIGHLAND VEGETABLES,Cabbage (Wonder Ball),510 gm - 1 kg/head,kg,114,2024-01-08,2026-08-31,144.59,144.59,available,yes
+"HIGHLAND VEGETABLES | Carrots, Local | 8-10 pcs/kg | kg",HIGHLAND VEGETABLES,"Carrots, Local",8-10 pcs/kg,kg,116,2024-01-01,2026-08-31,117.41,117.41,available,yes
+"HIGHLAND VEGETABLES | Cauliflower, Local | Medium (8-10 cm diameter/bunch hd) | kg",HIGHLAND VEGETABLES,"Cauliflower, Local",Medium (8-10 cm diameter/bunch hd),kg,77,2024-11-18,2026-08-31,291.47,291.47,available,yes
+HIGHLAND VEGETABLES | Celery | Medium (501-800 g) | kg,HIGHLAND VEGETABLES,Celery,Medium (501-800 g),kg,76,2024-11-18,2026-08-31,272.29,272.29,available,yes
+HIGHLAND VEGETABLES | Chayote | Medium (301-400 g) | kg,HIGHLAND VEGETABLES,Chayote,Medium (301-400 g),kg,116,2024-01-01,2026-08-31,101.91,101.91,available,yes
+"HIGHLAND VEGETABLES | Habichuelas/Baguio Beans, Local | (no specification) | kg",HIGHLAND VEGETABLES,"Habichuelas/Baguio Beans, Local",,kg,116,2024-01-01,2026-08-31,185.1,185.1,available,yes
+HIGHLAND VEGETABLES | Lettuce (Green Ice) | (no specification) | kg,HIGHLAND VEGETABLES,Lettuce (Green Ice),,kg,77,2024-11-18,2026-08-31,567.41,567.41,available,yes
+HIGHLAND VEGETABLES | Lettuce (Iceberg) | Medium (301-450 cm diameter/bunch hd) | kg,HIGHLAND VEGETABLES,Lettuce (Iceberg),Medium (301-450 cm diameter/bunch hd),kg,77,2024-11-18,2026-08-31,514.63,514.63,available,yes
+HIGHLAND VEGETABLES | Lettuce (Romaine) | (no specification) | kg,HIGHLAND VEGETABLES,Lettuce (Romaine),,kg,77,2024-11-18,2026-08-31,557.41,557.41,available,yes
+HIGHLAND VEGETABLES | Pechay Baguio | (no specification) | kg,HIGHLAND VEGETABLES,Pechay Baguio,,kg,116,2024-01-01,2026-08-31,167.69,167.69,available,yes
+"HIGHLAND VEGETABLES | White Potato, Local | 10-12 pcs/kg | kg",HIGHLAND VEGETABLES,"White Potato, Local",10-12 pcs/kg,kg,116,2024-01-01,2026-08-31,156.27,156.27,available,yes
+"SPICES | Chilli (Red), Local | Tingala | kg",SPICES,"Chilli (Red), Local",Tingala,kg,103,2024-04-29,2026-08-31,202.89,202.89,available,yes
+"SPICES | Garlic, Imported | (no specification) | kg",SPICES,"Garlic, Imported",,kg,120,2024-01-01,2026-08-31,150.77,150.77,available,yes
+"SPICES | Garlic, Native/Local | (no specification) | kg",SPICES,"Garlic, Native/Local",,kg,120,2024-01-01,2026-08-31,351,351,available,yes
+"SPICES | Ginger, Local | Fairly well-matured, Medium (150-300 gm) | kg",SPICES,"Ginger, Local","Fairly well-matured, Medium (150-300 gm)",kg,120,2024-01-01,2026-08-31,187.6,187.6,available,yes
+"SPICES | Red Onion, Imported | (no specification) | kg",SPICES,"Red Onion, Imported",,kg,56,2024-01-01,2026-08-24,90,,not sold / no price (-),yes
+"SPICES | Red Onion, Local | 13-15 pcs/kg | kg",SPICES,"Red Onion, Local",13-15 pcs/kg,kg,120,2024-01-01,2026-08-31,115.58,115.58,available,yes
+"SPICES | White Onion, Imported | (no specification) | kg",SPICES,"White Onion, Imported",,kg,99,2024-01-01,2026-08-17,130,,not sold / no price (-),yes
+"SPICES | White Onion, Local | (no specification) | kg",SPICES,"White Onion, Local",,kg,106,2024-01-01,2026-08-31,132.69,132.69,available,yes
+FRUITS | Avocado | (no specification) | kg,FRUITS,Avocado,,kg,81,2024-11-18,2026-08-31,217.64,217.64,available,yes
+FRUITS | Banana (Lakatan) | 8-10 pcs/kg | kg,FRUITS,Banana (Lakatan),8-10 pcs/kg,kg,120,2024-01-01,2026-08-31,96.49,96.49,available,yes
+FRUITS | Banana (Latundan) | 10-12 pcs/kg | kg,FRUITS,Banana (Latundan),10-12 pcs/kg,kg,120,2024-01-01,2026-08-31,77.18,77.18,available,yes
+FRUITS | Banana (Saba) | (no specification) | kg,FRUITS,Banana (Saba),,kg,81,2024-11-18,2026-08-31,64.19,64.19,available,yes
+FRUITS | Calamansi | (no specification) | kg,FRUITS,Calamansi,,kg,120,2024-01-01,2026-08-31,110.61,110.61,available,yes
+"FRUITS | Mango (Carabao) | Ripe, 3-4 pcs/kg | kg",FRUITS,Mango (Carabao),"Ripe, 3-4 pcs/kg",kg,119,2024-01-01,2026-08-31,225.29,225.29,available,yes
+FRUITS | Melon | (no specification) | kg,FRUITS,Melon,,kg,81,2024-11-18,2026-08-31,102.98,102.98,available,yes
+"FRUITS | Papaya | Solo, Ripe, 2-3 pcs/kg | kg",FRUITS,Papaya,"Solo, Ripe, 2-3 pcs/kg",kg,119,2024-01-01,2026-08-31,78.49,78.49,available,yes
+FRUITS | Pomelo | (no specification) | kg,FRUITS,Pomelo,,kg,81,2024-11-18,2026-08-31,175.98,175.98,available,yes
+FRUITS | Watermelon | (no specification) | kg,FRUITS,Watermelon,,kg,81,2024-11-18,2026-08-31,77.95,77.95,available,yes
+OTHER BASIC COMMODITIES | Cooking Oil (Coconut) | 1 Liter/bottle | L,OTHER BASIC COMMODITIES,Cooking Oil (Coconut),1 Liter/bottle,L,120,2024-01-01,2026-08-31,155.07,155.07,available,yes
+OTHER BASIC COMMODITIES | Cooking Oil (Coconut) | 350 ml/bottle | ml,OTHER BASIC COMMODITIES,Cooking Oil (Coconut),350 ml/bottle,ml,120,2024-01-01,2026-08-31,59.91,59.91,available,yes
+OTHER BASIC COMMODITIES | Cooking Oil (Palm) | 1 Liter/bottle | L,OTHER BASIC COMMODITIES,Cooking Oil (Palm),1 Liter/bottle,L,120,2024-01-01,2026-08-31,100.06,100.06,available,yes
+OTHER BASIC COMMODITIES | Cooking Oil (Palm) | 350 ml/bottle | ml,OTHER BASIC COMMODITIES,Cooking Oil (Palm),350 ml/bottle,ml,120,2024-01-01,2026-08-31,39.99,39.99,available,yes
+OTHER BASIC COMMODITIES | Salt (Iodized) | (no specification) | kg,OTHER BASIC COMMODITIES,Salt (Iodized),,kg,30,2026-01-05,2026-08-31,42.31,42.31,available,yes
+OTHER BASIC COMMODITIES | Salt (Rock) | (no specification) | kg,OTHER BASIC COMMODITIES,Salt (Rock),,kg,30,2026-01-05,2026-08-31,21.91,21.91,available,yes
+OTHER BASIC COMMODITIES | Sugar (Brown) | (no specification) | kg,OTHER BASIC COMMODITIES,Sugar (Brown),,kg,120,2024-01-01,2026-08-31,72.22,72.22,available,yes
+OTHER BASIC COMMODITIES | Sugar (Refined) | (no specification) | kg,OTHER BASIC COMMODITIES,Sugar (Refined),,kg,120,2024-01-01,2026-08-31,81.46,81.46,available,yes
+OTHER BASIC COMMODITIES | Sugar (Washed) | (no specification) | kg,OTHER BASIC COMMODITIES,Sugar (Washed),,kg,120,2024-01-01,2026-08-31,74.48,74.48,available,yes

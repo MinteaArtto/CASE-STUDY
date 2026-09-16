@@ -2,15 +2,13 @@ const express = require("express");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const PriceRecord = require("../models/PriceRecord");
-
 const router = express.Router();
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 
 const PREDICT_SCRIPT = path.join(PROJECT_ROOT, "ml", "predict_price.py");
 
-// Use the Python inside your ml virtual environment.
+// Use the project's Python virtual environment when available.
 const PYTHON_PATH =
   process.platform === "win32"
     ? path.join(PROJECT_ROOT, "ml", ".venv", "Scripts", "python.exe")
@@ -24,17 +22,26 @@ function runPython(args) {
   return new Promise((resolve, reject) => {
     const python = spawn(PYTHON_PATH, [PREDICT_SCRIPT, ...args], {
       cwd: PROJECT_ROOT,
+
+      // Important for Windows:
+      // force UTF-8 so names such as
+      // "P20 Benteng Bigas Meron Naᵃ"
+      // can be returned safely.
+      env: {
+        ...process.env,
+        PYTHONIOENCODING: "utf-8",
+      },
     });
 
     let stdout = "";
     let stderr = "";
 
     python.stdout.on("data", (data) => {
-      stdout += data.toString();
+      stdout += data.toString("utf8");
     });
 
     python.stderr.on("data", (data) => {
-      stderr += data.toString();
+      stderr += data.toString("utf8");
     });
 
     python.on("error", (error) => {
@@ -60,19 +67,48 @@ function runPython(args) {
 }
 
 // ============================================================
-// 1. GET AVAILABLE FORECASTABLE PRODUCTS
+// 1. GET CURRENT DA PRODUCT CATALOG
 //
 // GET:
 // /api/prices/products
+//
+// Returns all 100 current DA entries.
+//
+// Each product includes:
+// - series_key
+// - category
+// - commodity
+// - specification
+// - unit
+// - record_count
+// - forecast_available
+// - forecast_status
+// - forecast_message
+// - latest numeric price/date
+// - latest PDF price/status
 // ============================================================
 
 router.get("/products", async (req, res) => {
   try {
     const products = await runPython(["--products"]);
 
+    const forecastableCount = products.filter(
+      (product) => product.forecast_available === true,
+    ).length;
+
+    const unavailableCount = products.filter(
+      (product) => product.forecast_available === false,
+    ).length;
+
     return res.json({
       success: true,
+
       count: products.length,
+
+      forecastableCount,
+
+      unavailableCount,
+
       products,
     });
   } catch (error) {
@@ -80,7 +116,9 @@ router.get("/products", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to retrieve forecastable products.",
+
+      message: "Failed to retrieve current price products.",
+
       error: error.message,
     });
   }
@@ -92,40 +130,50 @@ router.get("/products", async (req, res) => {
 // POST:
 // /api/prices/forecast
 //
-// Body:
+// BODY:
+//
 // {
 //   "seriesKey":
-//   "HIGHLAND VEGETABLES | Broccoli, Local | Medium (8-10 cm diameter/bunch hd) | kg"
+//   "HIGHLAND VEGETABLES | Broccoli, Local |
+//    Medium (8-10 cm diameter/bunch hd) | kg"
 // }
+//
+// Returns:
+// - latest usable price
+// - 1-week forecast
+// - 2-week forecast
+// - 4-week forecast
 // ============================================================
 
 router.post("/forecast", async (req, res) => {
   try {
     const { seriesKey } = req.body;
 
-    // --------------------------------------------------------
-    // VALIDATION
-    // --------------------------------------------------------
+    // ------------------------------------------------------
+    // VALIDATE BODY
+    // ------------------------------------------------------
 
-    if (!seriesKey || !seriesKey.trim()) {
+    if (!seriesKey || typeof seriesKey !== "string" || !seriesKey.trim()) {
       return res.status(400).json({
         success: false,
+
         message: "seriesKey is required.",
       });
     }
 
-    // --------------------------------------------------------
-    // CALL PYTHON FORECAST SCRIPT
-    // --------------------------------------------------------
+    // ------------------------------------------------------
+    // RUN PYTHON FORECAST
+    // ------------------------------------------------------
 
     const forecast = await runPython(["--forecast", seriesKey.trim()]);
 
-    // --------------------------------------------------------
-    // RESPONSE
-    // --------------------------------------------------------
+    // ------------------------------------------------------
+    // SUCCESS RESPONSE
+    // ------------------------------------------------------
 
     return res.json({
       success: true,
+
       forecast,
     });
   } catch (error) {
@@ -133,147 +181,43 @@ router.post("/forecast", async (req, res) => {
 
     const message = error.message || "";
 
-    // --------------------------------------------------------
-    // USER / DATA ERROR
-    // --------------------------------------------------------
+    const lowerMessage = message.toLowerCase();
+
+    // ------------------------------------------------------
+    // EXPECTED CLIENT / DATA ERRORS
+    //
+    // These are NOT server crashes.
+    // They simply mean the selected commodity cannot
+    // currently be forecast.
+    // ------------------------------------------------------
 
     if (
-      message.includes("No records found") ||
-      message.includes("At least 16") ||
-      message.includes("historical records")
+      lowerMessage.includes("no records found") ||
+      lowerMessage.includes("at least 16") ||
+      lowerMessage.includes("historical data") ||
+      lowerMessage.includes("historical records") ||
+      lowerMessage.includes("insufficient historical data") ||
+      lowerMessage.includes("not part of the current")
     ) {
       return res.status(400).json({
         success: false,
+
         message,
       });
     }
 
-    // --------------------------------------------------------
-    // SERVER ERROR
-    // --------------------------------------------------------
+    // ------------------------------------------------------
+    // UNEXPECTED SERVER / MODEL ERROR
+    // ------------------------------------------------------
 
     return res.status(500).json({
       success: false,
+
       message: "Failed to generate price forecast.",
+
       error: message,
     });
   }
 });
-
-// ============================================================
-// 3. GET HISTORICAL PRICE RECORDS
-//
-// GET:
-// /api/prices/history?seriesKey=...
-//
-// Example:
-// /api/prices/history?seriesKey=HIGHLAND VEGETABLES | Broccoli, Local | ...
-// ============================================================
-
-router.get("/history", async (req, res) => {
-  try {
-    const { seriesKey } = req.query;
-
-    // --------------------------------------------------------
-    // VALIDATION
-    // --------------------------------------------------------
-
-    if (!seriesKey || !seriesKey.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "seriesKey query parameter is required.",
-      });
-    }
-
-    // --------------------------------------------------------
-    // GET HISTORY FROM MONGODB
-    // --------------------------------------------------------
-
-    const records = await PriceRecord.find({
-      seriesKey: seriesKey.trim(),
-    })
-      .sort({
-        weekStart: 1,
-      })
-      .select({
-        _id: 0,
-        weekStart: 1,
-        weekEnd: 1,
-        year: 1,
-        category: 1,
-        commodity: 1,
-        specification: 1,
-        unit: 1,
-        weeklyAveragePrice: 1,
-        seriesKey: 1,
-      })
-      .lean();
-
-    // --------------------------------------------------------
-    // NO RECORDS FOUND
-    // --------------------------------------------------------
-
-    if (records.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No historical price records found for this series.",
-      });
-    }
-
-    // --------------------------------------------------------
-    // FORMAT HISTORY
-    // --------------------------------------------------------
-
-    const history = records.map((record) => ({
-      weekStart: record.weekStart,
-
-      weekEnd: record.weekEnd,
-
-      year: record.year,
-
-      price: record.weeklyAveragePrice,
-    }));
-
-    // --------------------------------------------------------
-    // RESPONSE
-    // --------------------------------------------------------
-
-    return res.json({
-      success: true,
-
-      seriesKey: seriesKey.trim(),
-
-      category: records[0].category,
-
-      commodity: records[0].commodity,
-
-      specification: records[0].specification,
-
-      unit: records[0].unit,
-
-      count: records.length,
-
-      firstDate: records[0].weekStart,
-
-      latestDate: records[records.length - 1].weekStart,
-
-      history,
-    });
-  } catch (error) {
-    console.error("Price history error:", error);
-
-    return res.status(500).json({
-      success: false,
-
-      message: "Failed to retrieve historical prices.",
-
-      error: error.message,
-    });
-  }
-});
-
-// ============================================================
-// EXPORT ROUTER
-// ============================================================
 
 module.exports = router;
