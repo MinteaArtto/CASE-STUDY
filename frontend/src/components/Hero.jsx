@@ -38,9 +38,9 @@ export default function Hero() {
           <Mic className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/40" />
         </div>
 
-        <div className="mt-14 max-w-6xl mx-auto grid md:grid-cols-[minmax(0,1fr)_24rem] gap-8 items-center text-left">
+        <div className="mt-14 max-w-6xl mx-auto grid min-w-0 md:grid-cols-[minmax(0,1fr)_24rem] gap-8 items-center text-left">
           <ProductCarousel />
-          <div className="flex justify-center">
+          <div className="flex min-w-0 justify-center">
             <HowItWorksCard />
           </div>
         </div>

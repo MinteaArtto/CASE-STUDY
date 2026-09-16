@@ -66,7 +66,7 @@ export default function ProductCarousel() {
   }, [API_BASE]);
 
   return (
-    <div className="relative flex items-center gap-3">
+    <div className="relative flex min-w-0 w-full items-center gap-3">
       <button
         onClick={() => emblaApi?.scrollPrev()}
         aria-label="Previous"
@@ -75,7 +75,7 @@ export default function ProductCarousel() {
         <ChevronLeft className="w-5 h-5 text-ink/60" />
       </button>
 
-      <div className="overflow-hidden flex-1 py-4 -my-4" ref={emblaRef}>
+      <div className="min-w-0 flex-1 overflow-hidden py-4 -my-4" ref={emblaRef}>
         <div className="product-carousel-track flex gap-6 px-3">
           {PRODUCTS.map((product) => (
             (() => {
