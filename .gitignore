@@ -110,3 +110,36 @@ price_data/inspect_fruit_labels.py
 # ==========================================
 
 ml/wfp_price_models/
+
+
+# ==========================================
+# LOCAL BACKUPS / EXPERIMENTAL FILES
+# ==========================================
+
+# Local inspection / generated file lists
+backend/ml_file_list.txt
+ml_file_list.txt
+file_structure.txt
+
+# Local price model backups
+ml/price_model_backups/
+
+# Local price data backups
+price_data/backups/
+price_data/da_weekly_model_final_backup.csv
+
+# Demo rollback utility
+price_data/rollback_demo_week.py
+
+# Old / experimental price scripts
+ml/predict_price_backup.py
+
+# Experimental OOD models
+ml/model/fresh_rotten_knn_ood.joblib
+ml/model/fresh_rotten_ood_detector.joblib
+
+# Experimental OOD scripts
+ml/test_knn_ood_detector.py
+ml/test_ood_detector.py
+ml/train_knn_ood_detector.py
+ml/train_ood_detector.py
