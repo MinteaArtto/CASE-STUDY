@@ -1,27 +1,170 @@
+import { ArrowRight, LineChart, ScanSearch } from "lucide-react";
+
 export default function CTASection() {
   return (
-    <section className="bg-teal-dark text-cream-light">
-      <div className="flex items-center gap-2 px-6 py-3 bg-black/15">
-        <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-        <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-        <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
-      </div>
+    <section
+      className="
+        bg-teal-dark
 
-      <div className="max-w-6xl mx-auto px-6 py-16">
-        <div className="flex flex-col md:flex-row items-start justify-between gap-8">
-          <div className="text-left">
-            <h2 className="font-display font-bold text-3xl md:text-4xl">
-              FORECAST THE MARKET
-            </h2>
-            <p className="text-cream-light/80 mt-3 max-w-md">
-              Select a perishable good to view its historical market prices
-              and generated price forecast based on the available dataset.
-            </p>
+        px-4
+        sm:px-6
+
+        py-16
+        sm:py-20
+        lg:py-24
+
+        text-cream-light
+      "
+    >
+      <div
+        className="
+          max-w-6xl
+          mx-auto
+
+          grid
+          lg:grid-cols-[1fr_auto]
+
+          gap-8
+          sm:gap-10
+          lg:gap-12
+
+          items-center
+        "
+      >
+        <div>
+          <p
+            className="
+              text-xs
+              sm:text-sm
+
+              font-medium
+
+              text-mint
+            "
+          >
+            Explore MaMaV
+          </p>
+
+          <h2
+            className="
+              mt-3
+
+              max-w-2xl
+
+              font-display
+              font-bold
+
+              text-3xl
+              sm:text-4xl
+              md:text-5xl
+
+              leading-tight
+            "
+          >
+            Forecast prices. Assess product condition. Make more informed
+            decisions.
+          </h2>
+
+          <p
+            className="
+              mt-5
+
+              max-w-2xl
+
+              text-base
+              sm:text-lg
+
+              text-cream-light/70
+
+              leading-7
+              sm:leading-8
+            "
+          >
+            Use MaMaV's forecasting and spoilage-classification features to
+            explore market information and evaluate selected perishable goods.
+          </p>
+
+          <div
+            className="
+              mt-7
+              sm:mt-8
+
+              flex
+              flex-col
+              sm:flex-row
+              sm:flex-wrap
+
+              gap-3
+              sm:gap-5
+
+              text-sm
+
+              text-cream-light/80
+            "
+          >
+            <span
+              className="
+                inline-flex
+                items-center
+
+                gap-2
+              "
+            >
+              <LineChart className="w-4 h-4 text-mint shrink-0" />
+              Price forecasting
+            </span>
+
+            <span
+              className="
+                inline-flex
+                items-center
+
+                gap-2
+              "
+            >
+              <ScanSearch className="w-4 h-4 text-mint shrink-0" />
+              Spoilage classification
+            </span>
           </div>
-          <button className="bg-white text-ink text-sm font-medium px-8 py-3 rounded-full hover:bg-cream-light transition-colors shrink-0">
-            VIEW
-          </button>
         </div>
+
+        <a
+          href="#price-forecasting"
+          className="
+            inline-flex
+            items-center
+            justify-center
+
+            gap-2
+
+            rounded-full
+
+            bg-white
+
+            px-6
+            sm:px-7
+
+            py-3.5
+
+            text-sm
+            font-medium
+
+            text-ink
+
+            hover:bg-cream-light
+
+            transition-colors
+
+            whitespace-nowrap
+
+            w-full
+            sm:w-auto
+            lg:w-auto
+          "
+        >
+          Explore features
+          <ArrowRight className="w-4 h-4" />
+        </a>
       </div>
     </section>
   );

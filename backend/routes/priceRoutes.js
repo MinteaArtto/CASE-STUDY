@@ -1,21 +1,36 @@
 const express = require("express");
+const fs = require("fs");
 const path = require("path");
+const csv = require("csv-parser");
 const { spawn } = require("child_process");
 
 const router = express.Router();
+
+// ============================================================
+// PROJECT PATHS
+// ============================================================
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
 
 const PREDICT_SCRIPT = path.join(PROJECT_ROOT, "ml", "predict_price.py");
 
-// Use the project's Python virtual environment when available.
+const HISTORY_FILE = path.join(
+  PROJECT_ROOT,
+  "price_data",
+  "da_weekly_model_final.csv",
+);
+
+// ============================================================
+// PYTHON PATH
+// ============================================================
+
 const PYTHON_PATH =
   process.platform === "win32"
     ? path.join(PROJECT_ROOT, "ml", ".venv", "Scripts", "python.exe")
     : path.join(PROJECT_ROOT, "ml", ".venv", "bin", "python");
 
 // ============================================================
-// RUN PYTHON SCRIPT
+// RUN PYTHON
 // ============================================================
 
 function runPython(args) {
@@ -23,12 +38,11 @@ function runPython(args) {
     const python = spawn(PYTHON_PATH, [PREDICT_SCRIPT, ...args], {
       cwd: PROJECT_ROOT,
 
-      // Important for Windows:
-      // force UTF-8 so names such as
-      // "P20 Benteng Bigas Meron Naᵃ"
-      // can be returned safely.
       env: {
         ...process.env,
+
+        // Needed for DA names containing
+        // Unicode characters such as ᵃ.
         PYTHONIOENCODING: "utf-8",
       },
     });
@@ -67,25 +81,59 @@ function runPython(args) {
 }
 
 // ============================================================
+// READ CSV
+// ============================================================
+
+function readCSV(filePath) {
+  return new Promise((resolve, reject) => {
+    const rows = [];
+
+    if (!fs.existsSync(filePath)) {
+      return reject(new Error(`CSV file not found: ${filePath}`));
+    }
+
+    fs.createReadStream(filePath)
+      .pipe(
+        csv({
+          mapHeaders: ({ header }) => header.replace(/^\uFEFF/, "").trim(),
+        }),
+      )
+      .on("data", (row) => {
+        rows.push(row);
+      })
+      .on("end", () => {
+        resolve(rows);
+      })
+      .on("error", (error) => {
+        reject(error);
+      });
+  });
+}
+
+// ============================================================
+// NUMBER HELPER
+// ============================================================
+
+function toNumber(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (Number.isNaN(number)) {
+    return null;
+  }
+
+  return number;
+}
+
+// ============================================================
 // 1. GET CURRENT DA PRODUCT CATALOG
 //
-// GET:
-// /api/prices/products
+// GET /api/prices/products
 //
 // Returns all 100 current DA entries.
-//
-// Each product includes:
-// - series_key
-// - category
-// - commodity
-// - specification
-// - unit
-// - record_count
-// - forecast_available
-// - forecast_status
-// - forecast_message
-// - latest numeric price/date
-// - latest PDF price/status
 // ============================================================
 
 router.get("/products", async (req, res) => {
@@ -127,22 +175,12 @@ router.get("/products", async (req, res) => {
 // ============================================================
 // 2. GET PRICE FORECAST
 //
-// POST:
-// /api/prices/forecast
+// POST /api/prices/forecast
 //
 // BODY:
-//
 // {
-//   "seriesKey":
-//   "HIGHLAND VEGETABLES | Broccoli, Local |
-//    Medium (8-10 cm diameter/bunch hd) | kg"
+//   "seriesKey": "..."
 // }
-//
-// Returns:
-// - latest usable price
-// - 1-week forecast
-// - 2-week forecast
-// - 4-week forecast
 // ============================================================
 
 router.post("/forecast", async (req, res) => {
@@ -150,7 +188,7 @@ router.post("/forecast", async (req, res) => {
     const { seriesKey } = req.body;
 
     // ------------------------------------------------------
-    // VALIDATE BODY
+    // VALIDATE
     // ------------------------------------------------------
 
     if (!seriesKey || typeof seriesKey !== "string" || !seriesKey.trim()) {
@@ -162,14 +200,10 @@ router.post("/forecast", async (req, res) => {
     }
 
     // ------------------------------------------------------
-    // RUN PYTHON FORECAST
+    // FORECAST
     // ------------------------------------------------------
 
     const forecast = await runPython(["--forecast", seriesKey.trim()]);
-
-    // ------------------------------------------------------
-    // SUCCESS RESPONSE
-    // ------------------------------------------------------
 
     return res.json({
       success: true,
@@ -184,11 +218,7 @@ router.post("/forecast", async (req, res) => {
     const lowerMessage = message.toLowerCase();
 
     // ------------------------------------------------------
-    // EXPECTED CLIENT / DATA ERRORS
-    //
-    // These are NOT server crashes.
-    // They simply mean the selected commodity cannot
-    // currently be forecast.
+    // EXPECTED DATA ERRORS
     // ------------------------------------------------------
 
     if (
@@ -207,7 +237,7 @@ router.post("/forecast", async (req, res) => {
     }
 
     // ------------------------------------------------------
-    // UNEXPECTED SERVER / MODEL ERROR
+    // UNEXPECTED ERROR
     // ------------------------------------------------------
 
     return res.status(500).json({
@@ -219,5 +249,132 @@ router.post("/forecast", async (req, res) => {
     });
   }
 });
+
+// ============================================================
+// 3. GET PRICE HISTORY
+//
+// GET:
+// /api/prices/history?seriesKey=...
+//
+// Historical values come from the same cleaned/canonical
+// dataset used for the forecasting model.
+// ============================================================
+
+router.get("/history", async (req, res) => {
+  try {
+    const { seriesKey } = req.query;
+
+    // ------------------------------------------------------
+    // VALIDATE
+    // ------------------------------------------------------
+
+    if (!seriesKey || typeof seriesKey !== "string" || !seriesKey.trim()) {
+      return res.status(400).json({
+        success: false,
+
+        message: "seriesKey query parameter is required.",
+      });
+    }
+
+    // ------------------------------------------------------
+    // READ CLEANED CURRENT-CATALOG DATASET
+    // ------------------------------------------------------
+
+    const rows = await readCSV(HISTORY_FILE);
+
+    const matchingRows = rows
+      .filter((row) => row.series_key === seriesKey.trim())
+      .map((row) => ({
+        weekStart: row.week_start,
+
+        weekEnd: row.week_end || null,
+
+        year: row.year ? Number(row.year) : null,
+
+        price: toNumber(row.weekly_average_price),
+      }))
+      .filter((row) => row.weekStart && row.price !== null)
+      .sort((a, b) => new Date(a.weekStart) - new Date(b.weekStart));
+
+    // ------------------------------------------------------
+    // FIND PRODUCT INFORMATION
+    // ------------------------------------------------------
+
+    const firstMatchingRow = rows.find(
+      (row) => row.series_key === seriesKey.trim(),
+    );
+
+    // ------------------------------------------------------
+    // NO HISTORY
+    //
+    // This is a valid condition for current commodities
+    // that have no historical numeric observations yet.
+    // ------------------------------------------------------
+
+    if (matchingRows.length === 0) {
+      return res.json({
+        success: true,
+
+        seriesKey: seriesKey.trim(),
+
+        category: null,
+
+        commodity: null,
+
+        specification: null,
+
+        unit: null,
+
+        count: 0,
+
+        firstDate: null,
+
+        latestDate: null,
+
+        history: [],
+      });
+    }
+
+    // ------------------------------------------------------
+    // RESPONSE
+    // ------------------------------------------------------
+
+    return res.json({
+      success: true,
+
+      seriesKey: seriesKey.trim(),
+
+      category: firstMatchingRow?.category_normalized || null,
+
+      commodity: firstMatchingRow?.commodity_normalized || null,
+
+      specification: firstMatchingRow?.specification_normalized || null,
+
+      unit: firstMatchingRow?.unit || null,
+
+      count: matchingRows.length,
+
+      firstDate: matchingRows[0]?.weekStart || null,
+
+      latestDate: matchingRows[matchingRows.length - 1]?.weekStart || null,
+
+      history: matchingRows,
+    });
+  } catch (error) {
+    console.error("Price history error:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Failed to retrieve price history.",
+
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================
+// EXPORT ROUTER
+// ============================================================
 
 module.exports = router;

@@ -2,8 +2,11 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
+
 const spoilageRoutes = require("./routes/spoilageRoutes");
 const priceRoutes = require("./routes/priceRoutes");
+const authRoutes = require("./routes/authRoutes");
+const adminPriceRoutes = require("./routes/adminPriceRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -11,13 +14,62 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
+// ============================================================
+// MIDDLEWARE
+// ============================================================
+
 app.use(cors());
+
+// Parse JSON request bodies
 app.use(express.json());
+
+// Parse URL-encoded request bodies
+app.use(
+  express.urlencoded({
+    extended: true,
+  }),
+);
+
+// ============================================================
+// DEBUG MIDDLEWARE
+//
+// Temporary:
+// This lets us confirm that requests sent to the admin price
+// routes are actually arriving with a JSON body.
+//
+// You can remove this later after testing is finished.
+// ============================================================
+
+app.use("/api/admin/prices", (req, res, next) => {
+  console.log("\n==============================");
+  console.log("ADMIN PRICE REQUEST");
+  console.log("==============================");
+  console.log("Method:", req.method);
+  console.log("URL:", req.originalUrl);
+  console.log("Content-Type:", req.headers["content-type"]);
+  console.log("Body:");
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log("==============================\n");
+
+  next();
+});
+
+// ============================================================
+// ROUTES
+// ============================================================
+
+app.use("/api/auth", authRoutes);
+
 app.use("/api/spoilage", spoilageRoutes);
+
 app.use("/api/prices", priceRoutes);
 
-// Test route - just to check server is running
+app.use("/api/admin/prices", adminPriceRoutes);
+
+// ============================================================
+// TEST ROUTE
+// ============================================================
+
 app.get("/", (req, res) => {
   res.json({
     message: "Server is running!",
@@ -27,11 +79,16 @@ app.get("/", (req, res) => {
   });
 });
 
-// MongoDB Connection Test
+// ============================================================
+// MONGODB CONNECTION TEST
+// ============================================================
+
 app.get("/api/test-connection", async (req, res) => {
   try {
-    // Try to ping the database
-    await mongoose.connection.db.command({ ping: 1 });
+    await mongoose.connection.db.command({
+      ping: 1,
+    });
+
     res.json({
       success: true,
       message: "MongoDB is connected!",
@@ -46,22 +103,29 @@ app.get("/api/test-connection", async (req, res) => {
   }
 });
 
-// Connect to MongoDB
+// ============================================================
+// CONNECT TO MONGODB
+// ============================================================
+
 mongoose
-  .connect(process.env.ATLAS_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.ATLAS_URI)
   .then(() => {
     console.log("MongoDB Connected!");
-    console.log("Database: " + mongoose.connection.db.databaseName);
+
+    if (mongoose.connection.db) {
+      console.log("Database:", mongoose.connection.db.databaseName);
+    }
   })
   .catch((err) => {
     console.error("MongoDB Connection Error:", err.message);
   });
 
-// Start server
+// ============================================================
+// START SERVER
+// ============================================================
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
+
   console.log(`Test connection: http://localhost:${port}/api/test-connection`);
 });

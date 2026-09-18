@@ -2,8 +2,16 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { spawn } = require("child_process");
+const crypto = require("crypto");
 const axios = require("axios");
+
+const { analyzeSpoilageImage } = require("../services/spoilageMlService");
+
+const requireAuth = require("../middleware/authMiddleware");
+
+const SpoilageRecord = require("../models/SpoilageRecord");
+
+const cloudinary = require("../config/cloudinary");
 
 const router = express.Router();
 
@@ -20,7 +28,31 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // ============================================================
-// MULTER CONFIGURATION
+// IMAGE UPLOAD SECURITY
+// ============================================================
+
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
+
+const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+// ============================================================
+// EXTENSION FROM MIME
+// ============================================================
+
+function extensionForMimeType(mimeType) {
+  if (mimeType === "image/png") {
+    return ".png";
+  }
+
+  if (mimeType === "image/webp") {
+    return ".webp";
+  }
+
+  return ".jpg";
+}
+
+// ============================================================
+// MULTER STORAGE
 // ============================================================
 
 const storage = multer.diskStorage({
@@ -29,24 +61,100 @@ const storage = multer.diskStorage({
   },
 
   filename: function (req, file, cb) {
-    const uniqueName = Date.now() + "-" + file.originalname;
+    const extension = extensionForMimeType(file.mimetype);
+
+    const uniqueName = `${Date.now()}-${crypto.randomUUID()}${extension}`;
 
     cb(null, uniqueName);
   },
 });
 
+// ============================================================
+// MULTER CONFIGURATION
+// ============================================================
+
 const upload = multer({
-  storage: storage,
+  storage,
+
+  limits: {
+    fileSize: MAX_IMAGE_SIZE,
+
+    files: 1,
+  },
+
+  fileFilter: function (req, file, cb) {
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      return cb(new Error("Only JPEG, PNG, and WebP images are allowed."));
+    }
+
+    cb(null, true);
+  },
 });
 
 // ============================================================
-// DELETE TEMPORARY IMAGE
+// MULTER HANDLER
+// ============================================================
+
+function handleImageUpload(req, res, next) {
+  upload.single("image")(req, res, (error) => {
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({
+          success: false,
+
+          message: "Image must not exceed 20 MB.",
+        });
+      }
+
+      if (error.code === "LIMIT_FILE_COUNT") {
+        return res.status(400).json({
+          success: false,
+
+          message: "Only one image may be uploaded at a time.",
+        });
+      }
+
+      if (error.code === "LIMIT_UNEXPECTED_FILE") {
+        return res.status(400).json({
+          success: false,
+
+          message: 'Unexpected upload field. Use the field name "image".',
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+
+        message: error.message || "Image upload failed.",
+      });
+    }
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+
+        message: error.message || "Invalid image upload.",
+      });
+    }
+
+    next();
+  });
+}
+
+// ============================================================
+// DELETE TEMP FILE
 // ============================================================
 
 function deleteTemporaryImage(imagePath) {
+  if (!imagePath) {
+    return;
+  }
+
   fs.unlink(imagePath, (error) => {
     if (error) {
-      console.error("Could not delete temporary image:", error.message);
+      if (error.code !== "ENOENT") {
+        console.error("Could not delete temporary image:", error.message);
+      }
     } else {
       console.log("Temporary image deleted.");
     }
@@ -54,7 +162,250 @@ function deleteTemporaryImage(imagePath) {
 }
 
 // ============================================================
-// NYCKEL AUTHENTICATION
+// DETECT ACTUAL IMAGE TYPE
+// ============================================================
+
+function detectImageTypeFromSignature(filePath) {
+  const fileDescriptor = fs.openSync(filePath, "r");
+
+  try {
+    const header = Buffer.alloc(12);
+
+    const bytesRead = fs.readSync(fileDescriptor, header, 0, header.length, 0);
+
+    if (bytesRead < 12) {
+      return null;
+    }
+
+    const isJpeg =
+      header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+
+    if (isJpeg) {
+      return "image/jpeg";
+    }
+
+    const pngSignature = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+
+    const isPng = header.subarray(0, 8).equals(pngSignature);
+
+    if (isPng) {
+      return "image/png";
+    }
+
+    const isWebp =
+      header.toString("ascii", 0, 4) === "RIFF" &&
+      header.toString("ascii", 8, 12) === "WEBP";
+
+    if (isWebp) {
+      return "image/webp";
+    }
+
+    return null;
+  } finally {
+    fs.closeSync(fileDescriptor);
+  }
+}
+
+// ============================================================
+// VALIDATE UPLOAD CONTENT
+// ============================================================
+
+function validateUploadedImage(req, res, next) {
+  if (!req.file) {
+    return next();
+  }
+
+  let detectedMimeType = null;
+
+  try {
+    detectedMimeType = detectImageTypeFromSignature(req.file.path);
+  } catch (error) {
+    console.error("Could not inspect uploaded image:", error.message);
+
+    deleteTemporaryImage(req.file.path);
+
+    return res.status(400).json({
+      success: false,
+
+      message: "The uploaded image could not be validated.",
+    });
+  }
+
+  if (!detectedMimeType) {
+    deleteTemporaryImage(req.file.path);
+
+    return res.status(400).json({
+      success: false,
+
+      message: "The uploaded file is not a valid JPEG, PNG, or WebP image.",
+    });
+  }
+
+  if (detectedMimeType !== req.file.mimetype) {
+    console.log("Image MIME mismatch detected.");
+
+    console.log("Browser reported:", req.file.mimetype);
+
+    console.log("Actual image type:", detectedMimeType);
+  }
+
+  const correctExtension = extensionForMimeType(detectedMimeType);
+
+  const currentExtension = path.extname(req.file.path);
+
+  if (currentExtension.toLowerCase() !== correctExtension) {
+    const directory = path.dirname(req.file.path);
+
+    const filenameWithoutExtension = path.basename(
+      req.file.path,
+      currentExtension,
+    );
+
+    const correctedFilename = filenameWithoutExtension + correctExtension;
+
+    const correctedPath = path.join(directory, correctedFilename);
+
+    try {
+      fs.renameSync(req.file.path, correctedPath);
+
+      req.file.path = correctedPath;
+
+      req.file.filename = correctedFilename;
+    } catch (error) {
+      deleteTemporaryImage(req.file.path);
+
+      return res.status(500).json({
+        success: false,
+
+        message: "Could not prepare the uploaded image for analysis.",
+      });
+    }
+  }
+
+  req.file.mimetype = detectedMimeType;
+
+  req.file.detectedMimeType = detectedMimeType;
+
+  next();
+}
+
+// ============================================================
+// HISTORY LIMIT
+// ============================================================
+
+async function enforceHistoryLimit(userId) {
+  const MAX_RECORDS = 20;
+
+  const records = await SpoilageRecord.find({
+    user: userId,
+  })
+    .sort({
+      createdAt: -1,
+    })
+    .select("_id imagePublicId createdAt");
+
+  if (records.length <= MAX_RECORDS) {
+    return;
+  }
+
+  const recordsToDelete = records.slice(MAX_RECORDS);
+
+  for (const record of recordsToDelete) {
+    try {
+      if (record.imagePublicId) {
+        await cloudinary.uploader.destroy(record.imagePublicId);
+      }
+
+      await SpoilageRecord.deleteOne({
+        _id: record._id,
+      });
+    } catch (error) {
+      console.error(
+        "Could not delete old spoilage history:",
+        record._id,
+        error.message,
+      );
+    }
+  }
+}
+
+// ============================================================
+// SAVE HISTORY
+// ============================================================
+
+async function saveClassificationHistory({
+  req,
+  mlResult,
+  prediction,
+  treeProbability,
+  spoilageType,
+  spoilageConfidence,
+  recommendation,
+}) {
+  let cloudinaryResult = null;
+
+  try {
+    cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "mamav/spoilage",
+    });
+
+    const historyRecord = await SpoilageRecord.create({
+      user: req.user._id,
+
+      originalFilename: req.file.originalname,
+
+      imageUrl: cloudinaryResult.secure_url,
+
+      imagePublicId: cloudinaryResult.public_id,
+
+      status: "classified",
+
+      prediction,
+
+      treeProbability,
+
+      classProbabilities: {
+        fresh: mlResult.spoilage.probabilities?.Fresh ?? null,
+
+        rotten: mlResult.spoilage.probabilities?.Rotten ?? null,
+      },
+
+      produceValidation: mlResult.produce_validation,
+
+      novelty: mlResult.ood,
+
+      spoilageType,
+
+      spoilageConfidence,
+
+      recommendation,
+
+      message: mlResult.message || null,
+    });
+
+    await enforceHistoryLimit(req.user._id);
+
+    return historyRecord;
+  } catch (error) {
+    if (cloudinaryResult?.public_id) {
+      try {
+        await cloudinary.uploader.destroy(cloudinaryResult.public_id);
+      } catch (cleanupError) {
+        console.error(
+          "Could not clean Cloudinary image:",
+          cleanupError.message,
+        );
+      }
+    }
+
+    throw error;
+  }
+}
+
+// ============================================================
+// NYCKEL TOKEN
 // ============================================================
 
 async function getNyckelAccessToken() {
@@ -80,7 +431,7 @@ async function getNyckelAccessToken() {
 }
 
 // ============================================================
-// NYCKEL SPOILAGE PREDICTION
+// NYCKEL SPOILAGE INDICATOR
 // ============================================================
 
 async function predictSpoilageWithNyckel(imagePath) {
@@ -122,39 +473,23 @@ async function predictSpoilageWithNyckel(imagePath) {
 }
 
 // ============================================================
-// DECISION-SUPPORT RECOMMENDATIONS
+// RECOMMENDATIONS
 // ============================================================
 
 function getRecommendation(prediction, spoilageType) {
-  // ========================================================
-  // FRESH
-  // ========================================================
-
   if (prediction?.toLowerCase() === "fresh") {
     return (
       "The product is classified as fresh. " +
-      "Maintain proper handling and continue " +
-      "regular inspection to preserve its quality."
+      "Maintain proper handling and continue regular inspection " +
+      "to preserve its quality."
     );
   }
 
-  // ========================================================
-  // UNKNOWN RESULT
-  // ========================================================
-
   if (prediction?.toLowerCase() !== "rotten") {
-    return "Inspect the product before making " + "an inventory decision.";
+    return "Inspect the product before making an inventory decision.";
   }
 
-  // ========================================================
-  // ROTTEN
-  // ========================================================
-
   const type = spoilageType?.toLowerCase() || "";
-
-  // ========================================================
-  // DRYNESS / SHRINKAGE / WRINKLING
-  // ========================================================
 
   if (
     type.includes("dryness") ||
@@ -162,27 +497,17 @@ function getRecommendation(prediction, spoilageType) {
     type.includes("wrinkling")
   ) {
     return (
-      "Inspect the affected product and prioritize " +
-      "it for inventory review due to visible " +
-      "signs of moisture loss and deterioration."
+      "Inspect the affected product and prioritize it for inventory review " +
+      "due to visible signs of moisture loss and deterioration."
     );
   }
-
-  // ========================================================
-  // DISCOLORATION / COLOR CHANGE
-  // ========================================================
 
   if (type.includes("discoloration") || type.includes("color change")) {
     return (
-      "Inspect and separate the affected product " +
-      "from normal inventory and check nearby " +
-      "products for similar visible changes."
+      "Inspect and separate the affected product from normal inventory " +
+      "and check nearby products for similar visible changes."
     );
   }
-
-  // ========================================================
-  // SOFTNESS / TEXTURAL CHANGE / PITTING
-  // ========================================================
 
   if (
     type.includes("softness") ||
@@ -190,15 +515,10 @@ function getRecommendation(prediction, spoilageType) {
     type.includes("pitting")
   ) {
     return (
-      "Inspect the severity of the deterioration " +
-      "and prioritize the affected product for " +
-      "immediate handling."
+      "Inspect the severity of the deterioration and prioritize " +
+      "the affected product for immediate handling."
     );
   }
-
-  // ========================================================
-  // MOLD / VISIBLE ROT / SLIME / PUS
-  // ========================================================
 
   if (
     type.includes("mold") ||
@@ -207,197 +527,165 @@ function getRecommendation(prediction, spoilageType) {
     type.includes("pus")
   ) {
     return (
-      "Remove the affected product from sellable " +
-      "inventory and inspect nearby products for " +
-      "similar signs of spoilage."
+      "Remove the affected product from sellable inventory " +
+      "and inspect nearby products for similar signs of spoilage."
     );
   }
-
-  // ========================================================
-  // FERMENTATION / LIQUEFACTION
-  // ========================================================
 
   if (type.includes("fermentation") || type.includes("liquefaction")) {
     return (
-      "Separate the affected product from sellable " +
-      "inventory and inspect it for further signs " +
-      "of advanced deterioration."
+      "Separate the affected product from sellable inventory " +
+      "and inspect it for further signs of advanced deterioration."
     );
   }
-
-  // ========================================================
-  // FOUL ODOR / SMELL
-  //
-  // Image analysis cannot directly confirm odor.
-  // ========================================================
 
   if (type.includes("foul odor") || type === "smell") {
     return (
-      "A possible odor-related spoilage indicator " +
-      "was detected. Verify the product manually " +
-      "and remove it from sellable inventory if " +
-      "an abnormal odor is confirmed."
+      "A possible odor-related spoilage indicator was returned. " +
+      "Verify the product manually before making an inventory decision."
     );
   }
-
-  // ========================================================
-  // EXPIRATION DATE
-  // ========================================================
 
   if (type.includes("expiration date")) {
     return (
-      "Verify the product's actual expiration or " +
-      "date information manually before making " +
-      "an inventory decision."
+      "Verify the product's actual expiration or date information manually " +
+      "before making an inventory decision."
     );
   }
-
-  // ========================================================
-  // CRYSTALLIZATION
-  // ========================================================
 
   if (type.includes("crystallization")) {
     return (
       "Inspect the product and its storage condition. " +
-      "Separate it from normal inventory if " +
-      "crystallization is associated with quality " +
-      "deterioration."
+      "Separate it from normal inventory if crystallization is associated " +
+      "with quality deterioration."
     );
   }
 
-  // ========================================================
-  // FALLBACK
-  // ========================================================
-
   return (
     "The product is classified as rotten. " +
-    "Separate it from sellable inventory and " +
-    "conduct further inspection before handling."
+    "Separate it from sellable inventory and conduct further inspection."
   );
 }
+
+// ============================================================
+// GET HISTORY
+// ============================================================
+
+router.get(
+  "/history",
+
+  requireAuth,
+
+  async (req, res) => {
+    try {
+      const records = await SpoilageRecord.find({
+        user: req.user._id,
+      })
+        .sort({
+          createdAt: -1,
+        })
+        .limit(20)
+        .lean();
+
+      return res.json({
+        success: true,
+
+        count: records.length,
+
+        history: records.map((record) => ({
+          id: record._id,
+
+          originalFilename: record.originalFilename,
+
+          imageUrl: record.imageUrl,
+
+          status: record.status,
+
+          prediction: record.prediction,
+
+          treeProbability: record.treeProbability,
+
+          classProbabilities: record.classProbabilities,
+
+          produceValidation: record.produceValidation,
+
+          novelty: record.novelty,
+
+          spoilageType: record.spoilageType,
+
+          spoilageConfidence: record.spoilageConfidence,
+
+          recommendation: record.recommendation,
+
+          message: record.message,
+
+          createdAt: record.createdAt,
+
+          updatedAt: record.updatedAt,
+        })),
+      });
+    } catch (error) {
+      console.error("Could not retrieve spoilage history:", error);
+
+      return res.status(500).json({
+        success: false,
+
+        message: "Could not retrieve classification history.",
+      });
+    }
+  },
+);
 
 // ============================================================
 // POST /api/spoilage/analyze
 // ============================================================
 
-router.post("/analyze", upload.single("image"), (req, res) => {
-  // ========================================================
-  // CHECK IMAGE
-  // ========================================================
+router.post(
+  "/analyze",
 
-  if (!req.file) {
-    return res.status(400).json({
-      success: false,
+  requireAuth,
 
-      message: "No image was uploaded.",
-    });
-  }
+  handleImageUpload,
 
-  console.log("=================================");
+  validateUploadedImage,
 
-  console.log("Image received:", req.file.originalname);
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
 
-  console.log("Saved to:", req.file.path);
+        message: "No image was uploaded.",
+      });
+    }
 
-  console.log("Image type:", req.file.mimetype);
+    console.log("=================================");
 
-  console.log("Image size:", req.file.size, "bytes");
+    console.log("User:", req.user._id);
 
-  console.log("=================================");
+    console.log("Image:", req.file.originalname);
 
-  // ========================================================
-  // PYTHON PATH
-  // ========================================================
+    console.log("=================================");
 
-  const pythonPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "ml",
-    ".venv",
-    "Scripts",
-    "python.exe",
-  );
+    // ========================================================
+    // RUN PERSISTENT ML SERVICE
+    // ========================================================
 
-  // ========================================================
-  // NEW COMPLETE ML PIPELINE
-  // ========================================================
+    let mlResult;
 
-  const pipelineScript = path.join(
-    __dirname,
-    "..",
-    "..",
-    "ml",
-    "analyze_spoilage_pipeline.py",
-  );
+    try {
+      console.log("Sending image to persistent ML service...");
 
-  console.log("Python:", pythonPath);
+      const startedAt = Date.now();
 
-  console.log("Pipeline script:", pipelineScript);
+      mlResult = await analyzeSpoilageImage(req.file.path);
 
-  console.log("Starting spoilage pipeline...");
+      const elapsedMs = Date.now() - startedAt;
 
-  // ========================================================
-  // RUN PYTHON
-  // ========================================================
+      console.log(`ML classification completed in ${elapsedMs} ms.`);
 
-  const python = spawn(pythonPath, [pipelineScript, req.file.path]);
-
-  let output = "";
-  let errorOutput = "";
-
-  // ========================================================
-  // PYTHON STDOUT
-  // ========================================================
-
-  python.stdout.on("data", (data) => {
-    output += data.toString();
-  });
-
-  // ========================================================
-  // PYTHON STDERR
-  //
-  // Hugging Face warnings may appear here even when the
-  // prediction succeeds.
-  // ========================================================
-
-  python.stderr.on("data", (data) => {
-    errorOutput += data.toString();
-  });
-
-  // ========================================================
-  // PYTHON PROCESS ERROR
-  // ========================================================
-
-  python.on("error", (error) => {
-    console.error("Could not start Python process:", error.message);
-
-    deleteTemporaryImage(req.file.path);
-
-    return res.status(500).json({
-      success: false,
-
-      message: "Could not start the ML pipeline.",
-
-      error: error.message,
-    });
-  });
-
-  // ========================================================
-  // PYTHON FINISHED
-  // ========================================================
-
-  python.on("close", async (code) => {
-    console.log("Python process finished.");
-
-    console.log("Exit code:", code);
-
-    // ====================================================
-    // PYTHON FAILED
-    // ====================================================
-
-    if (code !== 0) {
-      console.error("Python error:", errorOutput);
+      console.log("ML status:", mlResult?.status);
+    } catch (error) {
+      console.error("ML service error:", error);
 
       deleteTemporaryImage(req.file.path);
 
@@ -406,65 +694,13 @@ router.post("/analyze", upload.single("image"), (req, res) => {
 
         message: "ML pipeline failed.",
 
-        error: errorOutput,
+        error: error.message,
       });
     }
 
-    console.log("Python output:", output);
-
-    // ====================================================
-    // PARSE JSON OUTPUT
-    // ====================================================
-
-    let mlResult;
-
-    try {
-      const lines = output
-        .trim()
-        .split(/\r?\n/)
-        .filter((line) => line.trim());
-
-      let parsed = null;
-
-      // Search from the final line backwards.
-      // This protects us if Python prints another
-      // harmless message before the JSON.
-      for (let i = lines.length - 1; i >= 0; i--) {
-        try {
-          parsed = JSON.parse(lines[i]);
-
-          break;
-        } catch {
-          // Continue searching upward.
-        }
-      }
-
-      if (!parsed) {
-        throw new Error("No valid JSON result was returned.");
-      }
-
-      mlResult = parsed;
-    } catch (parseError) {
-      console.error("Could not parse ML output:", parseError.message);
-
-      deleteTemporaryImage(req.file.path);
-
-      return res.status(500).json({
-        success: false,
-
-        message: "Could not understand the ML pipeline result.",
-
-        rawOutput: output,
-
-        error: parseError.message,
-      });
-    }
-
-    console.log("ML status:", mlResult.status);
-
-    // ====================================================
-    // ML SCRIPT RETURNED ERROR
-    // ====================================================
+    // ========================================================
+    // ML ERROR
+    // ========================================================
 
     if (mlResult.success === false) {
       deleteTemporaryImage(req.file.path);
@@ -476,15 +712,11 @@ router.post("/analyze", upload.single("image"), (req, res) => {
       });
     }
 
-    // ====================================================
+    // ========================================================
     // NON-PRODUCE
-    //
-    // CLIP stops the request before KNN / Decision Tree.
-    // ====================================================
+    // ========================================================
 
     if (mlResult.status === "rejected_non_produce") {
-      console.log("Image rejected as non-produce.");
-
       deleteTemporaryImage(req.file.path);
 
       return res.json({
@@ -511,17 +743,11 @@ router.post("/analyze", upload.single("image"), (req, res) => {
       });
     }
 
-    // ====================================================
+    // ========================================================
     // UNFAMILIAR PRODUCE
-    //
-    // CLIP accepted it as produce, but its CNN feature
-    // representation falls outside the calibrated p99
-    // KNN range.
-    // ====================================================
+    // ========================================================
 
     if (mlResult.status === "unfamiliar_produce") {
-      console.log("Produce detected, but image is outside familiar ML range.");
-
       deleteTemporaryImage(req.file.path);
 
       return res.json({
@@ -544,57 +770,58 @@ router.post("/analyze", upload.single("image"), (req, res) => {
         spoilageConfidence: null,
 
         recommendation:
-          "The product appears to be produce, " +
-          "but it is outside the model's familiar " +
-          "training range. Manual inspection is " +
-          "recommended.",
+          "The product appears to be produce, but it is outside the model's familiar training range. Manual inspection is recommended.",
       });
     }
 
-    // ====================================================
-    // EXPECT CLASSIFIED RESULT
-    // ====================================================
+    // ========================================================
+    // EXPECT CLASSIFIED
+    // ========================================================
 
     if (mlResult.status !== "classified" || !mlResult.spoilage) {
-      console.error("Unexpected ML result:", mlResult);
-
       deleteTemporaryImage(req.file.path);
 
       return res.status(500).json({
         success: false,
 
         message: "The ML pipeline returned an unexpected result.",
-
-        mlResult: mlResult,
       });
     }
-
-    // ====================================================
-    // EXTRACT DECISION TREE RESULT
-    // ====================================================
 
     const prediction = mlResult.spoilage.prediction;
 
     const treeProbability = mlResult.spoilage.tree_probability;
 
-    console.log("Decision Tree prediction:", prediction);
-
-    console.log("Decision Tree probability:", treeProbability);
-
-    console.log("Novelty level:", mlResult.ood?.novelty_level);
-
-    // ====================================================
+    // ========================================================
     // FRESH
-    //
-    // DO NOT CALL NYCKEL.
-    // ====================================================
+    // ========================================================
 
     if (prediction.toLowerCase() === "fresh") {
-      console.log("Product classified as Fresh.");
-
-      console.log("Nyckel will NOT be called.");
-
       const recommendation = getRecommendation(prediction, null);
+
+      try {
+        await saveClassificationHistory({
+          req,
+          mlResult,
+          prediction,
+          treeProbability,
+
+          spoilageType: null,
+
+          spoilageConfidence: null,
+
+          recommendation,
+        });
+      } catch (error) {
+        deleteTemporaryImage(req.file.path);
+
+        return res.status(500).json({
+          success: false,
+
+          message:
+            "Classification succeeded, but the history record could not be saved.",
+        });
+      }
 
       deleteTemporaryImage(req.file.path);
 
@@ -603,11 +830,9 @@ router.post("/analyze", upload.single("image"), (req, res) => {
 
         status: "classified",
 
-        prediction: prediction,
+        prediction,
 
-        // Decision Tree probability.
-        // Do not describe this as calibrated confidence.
-        treeProbability: treeProbability,
+        treeProbability,
 
         classProbabilities: mlResult.spoilage.probabilities,
 
@@ -619,67 +844,49 @@ router.post("/analyze", upload.single("image"), (req, res) => {
 
         spoilageConfidence: null,
 
-        recommendation: recommendation,
+        recommendation,
       });
     }
 
-    // ====================================================
+    // ========================================================
     // ROTTEN
-    //
-    // CALL NYCKEL FOR VISIBLE SPOILAGE INDICATOR.
-    // ====================================================
+    // ========================================================
 
     if (prediction.toLowerCase() === "rotten") {
-      console.log("Product classified as Rotten.");
-
-      console.log("Calling Nyckel for spoilage identification...");
-
       try {
-        // =================================================
-        // NYCKEL RESULT
-        // =================================================
+        const nyckelStartedAt = Date.now();
 
         const nyckelResult = await predictSpoilageWithNyckel(req.file.path);
 
-        console.log("Nyckel result:", nyckelResult);
-
-        // =================================================
-        // EXTRACT NYCKEL VALUES
-        // =================================================
+        console.log(`Nyckel completed in ${Date.now() - nyckelStartedAt} ms.`);
 
         const spoilageType =
           nyckelResult.labelName || nyckelResult.label || null;
 
         const spoilageConfidence = nyckelResult.confidence ?? null;
 
-        console.log("Spoilage type:", spoilageType);
-
-        console.log("Spoilage confidence:", spoilageConfidence);
-
-        // =================================================
-        // RECOMMENDATION
-        // =================================================
-
         const recommendation = getRecommendation(prediction, spoilageType);
 
-        // =================================================
-        // DELETE TEMP IMAGE
-        // =================================================
+        await saveClassificationHistory({
+          req,
+          mlResult,
+          prediction,
+          treeProbability,
+          spoilageType,
+          spoilageConfidence,
+          recommendation,
+        });
 
         deleteTemporaryImage(req.file.path);
-
-        // =================================================
-        // FINAL RESULT
-        // =================================================
 
         return res.json({
           success: true,
 
           status: "classified",
 
-          prediction: prediction,
+          prediction,
 
-          treeProbability: treeProbability,
+          treeProbability,
 
           classProbabilities: mlResult.spoilage.probabilities,
 
@@ -687,16 +894,16 @@ router.post("/analyze", upload.single("image"), (req, res) => {
 
           novelty: mlResult.ood,
 
-          spoilageType: spoilageType,
+          spoilageType,
 
-          spoilageConfidence: spoilageConfidence,
+          spoilageConfidence,
 
-          recommendation: recommendation,
+          recommendation,
         });
-      } catch (nyckelError) {
+      } catch (error) {
         console.error(
-          "Nyckel prediction failed:",
-          nyckelError.response?.data || nyckelError.message,
+          "Rotten classification processing failed:",
+          error.response?.data || error.message,
         );
 
         deleteTemporaryImage(req.file.path);
@@ -704,16 +911,16 @@ router.post("/analyze", upload.single("image"), (req, res) => {
         return res.status(500).json({
           success: false,
 
-          message: "Nyckel spoilage prediction failed.",
+          message: "Rotten classification processing failed.",
 
-          error: nyckelError.response?.data || nyckelError.message,
+          error: error.response?.data || error.message,
         });
       }
     }
 
-    // ====================================================
-    // UNEXPECTED DECISION TREE LABEL
-    // ====================================================
+    // ========================================================
+    // UNKNOWN LABEL
+    // ========================================================
 
     deleteTemporaryImage(req.file.path);
 
@@ -722,9 +929,9 @@ router.post("/analyze", upload.single("image"), (req, res) => {
 
       message: "Unknown spoilage classification returned.",
 
-      prediction: prediction,
+      prediction,
     });
-  });
-});
+  },
+);
 
 module.exports = router;

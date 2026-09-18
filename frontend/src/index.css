@@ -5,6 +5,18 @@
 
 @import "tailwindcss";
 
+/* ============================================================
+   IMPORTANT
+
+   Tailwind v4 normally allows dark: utilities to follow the
+   operating-system theme.
+
+   MaMaV controls dark mode manually by adding/removing the
+   .dark class on <html>, so force Tailwind to use that class.
+   ============================================================ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-cream: #f7f4d9;
   --color-cream-light: #fbf9ec;
@@ -13,9 +25,14 @@
   --color-teal: #3f6f6b;
   --color-teal-dark: #335b58;
   --color-ink: #1c1b17;
+
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;
 }
+
+/* ============================================================
+   BASE
+   ============================================================ */
 
 html {
   scroll-behavior: smooth;
@@ -23,75 +40,478 @@ html {
 
 body {
   @apply font-body text-ink bg-cream-light;
-  transition: background-color 200ms ease, color 200ms ease;
+
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
 }
 
-/* Theme colors are applied to the existing Tailwind utility classes so images
-   and their original colors remain unchanged. */
-.dark body {
-  background-color: #17181a;
-  color: #e5e7eb;
+/* ============================================================
+   LIGHT MODE
+   ============================================================ */
+
+html:not(.dark) body {
+  background-color: #fbf9ec;
+  color: #1c1b17;
 }
+
+html:not(.dark) header.sticky {
+  background-color: rgb(255 255 255 / 96%) !important;
+
+  color: #1c1b17 !important;
+
+  border-bottom-color: rgb(28 27 23 / 10%) !important;
+
+  box-shadow: 0 2px 10px rgb(0 0 0 / 4%) !important;
+}
+
+html:not(.dark) select {
+  background-color: #ffffff;
+  color: #1c1b17;
+
+  color-scheme: light;
+}
+
+html:not(.dark) select option {
+  background-color: #ffffff;
+  color: #1c1b17;
+}
+
+/* ============================================================
+   DARK MODE — BODY
+   ============================================================ */
+
+.dark body {
+  background-color: #171a19;
+  color: #e7ecea;
+}
+
+/* ============================================================
+   DARK MODE — HEADER
+   ============================================================ */
+
+.dark header.sticky {
+  background-color: rgb(20 25 23 / 96%) !important;
+
+  color: #e7ecea !important;
+
+  border-bottom-color: rgb(216 238 229 / 12%) !important;
+
+  box-shadow: 0 2px 18px rgb(0 0 0 / 35%) !important;
+}
+
+/* ============================================================
+   THEME BUTTON
+   ============================================================ */
+
+.dark-mode-toggle {
+  border: 1px solid rgb(28 27 23 / 20%) !important;
+
+  background-color: #ffffff;
+}
+
+.dark .dark-mode-toggle {
+  background-color: #29302d;
+
+  border-color: rgb(143 200 192 / 40%) !important;
+
+  color: #9bcfc7;
+}
+
+/* ============================================================
+   HEADER NAVIGATION
+   ============================================================ */
+
+.header-nav-link:hover {
+  color: #202124;
+}
+
+.dark .header-nav-link:hover {
+  color: #8fc8c0;
+}
+
+/* ============================================================
+   DARK BACKGROUNDS
+   ============================================================ */
 
 .dark .bg-cream-light,
+.dark .bg-cream-light\/60,
 .dark .bg-cream-light\/70,
+.dark .bg-cream-light\/80,
 .dark .bg-cream-light\/90 {
-  background-color: #242628;
+  background-color: #242927;
 }
 
-.dark .bg-cream,
-.dark .from-cream {
-  background-color: #202124;
-  --tw-gradient-from: #202124;
+.dark .bg-cream {
+  background-color: #202522;
 }
 
-.dark .to-cream-light {
-  --tw-gradient-to: #17181a;
+.dark .bg-mint {
+  background-color: #2d3834;
 }
 
-.dark .from-cream-light {
-  --tw-gradient-from: #242628;
-  --tw-gradient-to: #17181a;
-}
-
-.dark .from-mint {
-  --tw-gradient-from: #34383b;
-  --tw-gradient-to: #17181a;
-}
-
-.dark .via-mint-light {
-  --tw-gradient-via: #2b2e31;
-}
-
-.dark .to-mint {
-  --tw-gradient-to: #34383b;
-}
-
-.dark .to-white {
-  --tw-gradient-to: #17181a;
-}
-
-.dark .bg-white,
-.dark .bg-white\/60,
-.dark .bg-white\/70,
-.dark .bg-white\/80,
-.dark .bg-white\/90 {
-  background-color: #2d3033;
-}
-
-.dark .bg-mint,
 .dark .bg-mint\/70 {
-  background-color: #34383b;
+  background-color: rgb(45 56 52 / 70%);
+}
+
+.dark .bg-mint-light,
+.dark .bg-mint-light\/40,
+.dark .bg-mint-light\/60,
+.dark .bg-mint-light\/70 {
+  background-color: #29332f;
 }
 
 .dark .bg-teal-dark {
-  background-color: #202124;
+  background-color: #1b2c29;
 }
+
+/* ============================================================
+   WHITE SURFACES
+   ============================================================ */
+
+.dark .bg-white {
+  background-color: #2a302e;
+}
+
+.dark .bg-white\/60 {
+  background-color: rgb(42 48 46 / 60%);
+}
+
+.dark .bg-white\/70 {
+  background-color: rgb(42 48 46 / 70%);
+}
+
+.dark .bg-white\/80 {
+  background-color: rgb(42 48 46 / 80%);
+}
+
+.dark .bg-white\/90 {
+  background-color: rgb(42 48 46 / 90%);
+}
+
+/* ============================================================
+   DARK GRADIENTS
+   ============================================================ */
+
+.dark .from-cream {
+  --tw-gradient-from: #202522;
+}
+
+.dark .from-cream-light {
+  --tw-gradient-from: #242927;
+}
+
+.dark .to-cream-light {
+  --tw-gradient-to: #171a19;
+}
+
+.dark .from-mint {
+  --tw-gradient-from: #2d3834;
+}
+
+.dark .from-mint-light {
+  --tw-gradient-from: #29332f;
+}
+
+.dark .via-mint-light {
+  --tw-gradient-via: #29332f;
+}
+
+.dark .to-mint {
+  --tw-gradient-to: #2d3834;
+}
+
+.dark .to-cream {
+  --tw-gradient-to: #202522;
+}
+
+.dark .to-mint-light\/40 {
+  --tw-gradient-to: rgb(45 56 52 / 40%);
+}
+
+.dark .to-white {
+  --tw-gradient-to: #171a19;
+}
+
+/* ============================================================
+   INLINE PAGE GRADIENTS
+   ============================================================ */
+
+.dark [style*="linear-gradient(180deg"] {
+  background: linear-gradient(180deg, #202522 0%, #29332f 100%) !important;
+}
+
+/* ============================================================
+   TEXT
+   ============================================================ */
+
+.dark .text-ink {
+  color: #e7ecea;
+}
+
+.dark .text-ink\/80 {
+  color: rgb(231 236 234 / 85%);
+}
+
+.dark .text-ink\/70 {
+  color: rgb(214 222 219 / 82%);
+}
+
+.dark .text-ink\/65 {
+  color: rgb(214 222 219 / 76%);
+}
+
+.dark .text-ink\/60 {
+  color: rgb(190 202 198 / 76%);
+}
+
+.dark .text-ink\/55 {
+  color: rgb(177 190 186 / 78%);
+}
+
+.dark .text-ink\/50 {
+  color: rgb(167 181 176 / 76%);
+}
+
+.dark .text-ink\/45 {
+  color: rgb(157 172 167 / 72%);
+}
+
+.dark .text-ink\/40 {
+  color: rgb(147 163 158 / 68%);
+}
+
+.dark .text-ink\/35 {
+  color: rgb(137 153 148 / 64%);
+}
+
+.dark .text-cream-light {
+  color: #edf3f0;
+}
+
+/* ============================================================
+   MaMaV ACCENT COLORS
+   ============================================================ */
+
+.dark .text-teal {
+  color: #7fbab2;
+}
+
+.dark .text-teal-dark {
+  color: #8fc8c0;
+}
+
+.dark .bg-teal {
+  background-color: #5f9f97;
+}
+
+.dark .bg-teal\/5 {
+  background-color: rgb(95 159 151 / 8%);
+}
+
+.dark .bg-teal\/10 {
+  background-color: rgb(95 159 151 / 14%);
+}
+
+.dark .border-teal\/20 {
+  border-color: rgb(127 186 178 / 30%);
+}
+
+.dark .border-teal\/25 {
+  border-color: rgb(127 186 178 / 32%);
+}
+
+.dark .border-teal\/30 {
+  border-color: rgb(127 186 178 / 36%);
+}
+
+.dark .border-teal\/35 {
+  border-color: rgb(127 186 178 / 40%);
+}
+
+/* ============================================================
+   BORDERS
+   ============================================================ */
+
+.dark .border-ink\/5,
+.dark .border-ink\/10,
+.dark .border-ink\/15,
+.dark .border-ink\/20 {
+  border-color: rgb(231 236 234 / 12%);
+}
+
+.dark .border-white,
+.dark .border-white\/60 {
+  border-color: rgb(231 236 234 / 12%);
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #222825;
+
+  color: #e7ecea;
+
+  border-color: rgb(231 236 234 / 14%);
+
+  color-scheme: dark;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgb(167 181 176 / 65%);
+}
+
+.dark select option {
+  background-color: #222825;
+  color: #e7ecea;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #6eb0a7;
+}
+
+/* ============================================================
+   PRIMARY BUTTONS
+
+   bg-ink is also used by table headers, so only buttons and
+   links receive the teal dark-mode treatment.
+   ============================================================ */
+
+.dark button.bg-ink,
+.dark a.bg-ink {
+  background-color: #5f9f97;
+
+  color: #101513;
+}
+
+.dark button.bg-ink:hover,
+.dark a.bg-ink:hover {
+  background-color: #6eaaa2;
+}
+
+/* ============================================================
+   STATUS COLORS
+   ============================================================ */
+
+/* GREEN */
+
+.dark .bg-green-50,
+.dark .bg-green-100,
+.dark .bg-green-100\/70 {
+  background-color: rgb(22 101 52 / 20%);
+}
+
+.dark .border-green-100,
+.dark .border-green-200,
+.dark .border-green-300,
+.dark .border-green-400,
+.dark .border-green-400\/60 {
+  border-color: rgb(74 222 128 / 32%);
+}
+
+.dark .text-green-700,
+.dark .text-green-800,
+.dark .text-green-800\/80 {
+  color: #86cfa0;
+}
+
+/* RED */
+
+.dark .bg-red-50,
+.dark .bg-red-100 {
+  background-color: rgb(127 29 29 / 22%);
+}
+
+.dark .border-red-100,
+.dark .border-red-200,
+.dark .border-red-300 {
+  border-color: rgb(248 113 113 / 35%);
+}
+
+.dark .text-red-600,
+.dark .text-red-700 {
+  color: #f0a3a3;
+}
+
+/* AMBER */
+
+.dark .bg-amber-50,
+.dark .bg-amber-100,
+.dark .bg-amber-100\/70 {
+  background-color: rgb(120 53 15 / 22%);
+}
+
+.dark .border-amber-200,
+.dark .border-amber-300,
+.dark .border-amber-400,
+.dark .border-amber-400\/60 {
+  border-color: rgb(251 191 36 / 32%);
+}
+
+.dark .text-amber-700,
+.dark .text-amber-800,
+.dark .text-amber-800\/75,
+.dark .text-amber-800\/80 {
+  color: #e8c66b;
+}
+
+/* ORANGE */
+
+.dark .bg-orange-100 {
+  background-color: rgb(154 52 18 / 24%);
+}
+
+.dark .text-orange-800 {
+  color: #e8aa79;
+}
+
+/* BLUE */
+
+.dark .bg-blue-50,
+.dark .bg-blue-100 {
+  background-color: rgb(30 64 175 / 18%);
+}
+
+.dark .border-blue-200 {
+  border-color: rgb(96 165 250 / 30%);
+}
+
+.dark .text-blue-800 {
+  color: #9abce8;
+}
+
+/* YELLOW */
+
+.dark .bg-yellow-50 {
+  background-color: rgb(113 63 18 / 24%);
+}
+
+.dark .border-yellow-200 {
+  border-color: rgb(250 204 21 / 32%);
+}
+
+.dark .text-yellow-700 {
+  color: #e4ce72;
+}
+
+/* ============================================================
+   PRODUCT CAROUSEL
+   ============================================================ */
 
 .product-card {
   position: relative;
+
   isolation: isolate;
+
   overflow: hidden;
+
   flex: 0 0 calc((100% - 4.5rem) / 3);
 }
 
@@ -103,120 +523,106 @@ body {
 
 .product-carousel-track {
   column-gap: 1.5rem;
+
   box-sizing: border-box;
 }
 
 .product-card::before {
   position: absolute;
+
   inset: 0;
+
   z-index: 0;
+
   background:
-    radial-gradient(circle at 18% 18%, rgb(212 255 224 / 80%) 0 2px, transparent 3px),
-    radial-gradient(circle at 78% 28%, rgb(172 240 190 / 60%) 0 2px, transparent 3px),
-    radial-gradient(circle at 62% 82%, rgb(116 194 139 / 45%) 0 2px, transparent 3px),
+    radial-gradient(
+      circle at 18% 18%,
+      rgb(212 255 224 / 80%) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 78% 28%,
+      rgb(172 240 190 / 60%) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 62% 82%,
+      rgb(116 194 139 / 45%) 0 2px,
+      transparent 3px
+    ),
     linear-gradient(145deg, rgb(184 235 198 / 85%), rgb(63 111 107 / 30%));
+
   content: "";
+
   opacity: 0;
+
   transform: scale(1.08) rotate(-2deg);
-  transition: opacity 300ms ease, transform 500ms ease;
+
+  transition:
+    opacity 300ms ease,
+    transform 500ms ease;
 }
 
 .product-card:hover::before,
 .product-card:focus-visible::before {
   opacity: 1;
+
   transform: scale(1) rotate(0deg);
 }
 
 .product-card > * {
   position: relative;
+
   z-index: 1;
 }
 
 .dark .product-card::before {
   background:
-    radial-gradient(circle at 18% 18%, rgb(238 211 255 / 80%) 0 2px, transparent 3px),
-    radial-gradient(circle at 78% 28%, rgb(192 147 255 / 65%) 0 2px, transparent 3px),
-    radial-gradient(circle at 62% 82%, rgb(139 92 246 / 55%) 0 2px, transparent 3px),
-    linear-gradient(145deg, rgb(126 87 168 / 85%), rgb(45 35 70 / 75%));
+    radial-gradient(
+      circle at 18% 18%,
+      rgb(168 216 208 / 60%) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 78% 28%,
+      rgb(127 186 178 / 50%) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 62% 82%,
+      rgb(95 159 151 / 45%) 0 2px,
+      transparent 3px
+    ),
+    linear-gradient(145deg, rgb(54 91 85 / 85%), rgb(29 49 46 / 80%));
 }
 
-.dark .text-ink {
-  color: #e5e7eb;
-}
-
-.dark .text-ink\/80 {
-  color: rgb(229 231 235 / 80%);
-}
-
-.dark .text-ink\/70 {
-  color: rgb(209 213 219 / 75%);
-}
-
-.dark .text-ink\/65 {
-  color: rgb(209 213 219 / 70%);
-}
-
-.dark .text-ink\/60 {
-  color: rgb(156 163 175 / 80%);
-}
-
-.dark .text-ink\/55,
-.dark .text-ink\/50 {
-  color: rgb(156 163 175 / 70%);
-}
-
-.dark .text-ink\/45,
-.dark .text-ink\/40 {
-  color: rgb(156 163 175 / 60%);
-}
-
-.dark .text-cream-light {
-  color: #e5e7eb;
-}
-
-.dark .border-ink\/5,
-.dark .border-ink\/10,
-.dark .border-ink\/15 {
-  border-color: rgb(244 241 223 / 15%);
-}
-
-.dark .dark-mode-toggle {
-  background-color: #2d3033;
-  border-color: rgb(244 241 223 / 20%);
-  color: #f4d77a;
-}
-
-/* Keep the classifier image preview surface visible without changing the
-   classifier component or any uploaded image colors. */
-.dark .w-72.h-72.rounded-full.bg-cream-light {
-  background-color: #9ca3af;
-}
-
-/* The classifier uses an inline light gradient, so override only its page
-   surface while leaving the product preview image untouched. */
-.dark [style*="linear-gradient(180deg"] {
-  background: linear-gradient(180deg, #202124 0%, #34383b 100%) !important;
-}
+/* ============================================================
+   FORECAST GRAPH
+   ============================================================ */
 
 .dark .forecast-chart stop:first-child {
-  stop-color: #2d3033;
+  stop-color: #29302d;
 }
 
 .dark .forecast-chart stop:last-child {
-  stop-color: #242628;
+  stop-color: #202522;
 }
 
 .dark .forecast-chart rect {
-  stroke: #111315;
+  stroke: #111613;
 }
 
 .dark .forecast-chart line {
-  stroke: #9ca3af;
+  stroke: #7e8b86;
 }
 
 .dark .forecast-chart text {
-  fill: #d1d5db !important;
+  fill: #d5ddda !important;
 }
+
+/* ============================================================
+   CURRENT PRICE
+   ============================================================ */
 
 .current-price-header,
 .current-price-cell {
@@ -225,35 +631,43 @@ body {
 
 .current-price-header {
   border-top: 2px solid #22c55e;
+
   border-bottom: 2px solid #22c55e;
 }
 
 .current-price-cell {
   border-left: 1px solid rgb(34 197 94 / 45%);
+
   border-right: 1px solid rgb(34 197 94 / 45%);
 }
 
 .dark .current-price-header,
 .dark .current-price-cell {
-  color: #c084fc;
+  color: #8fc8c0;
 }
 
 .dark .current-price-header {
-  border-top-color: #a855f7;
-  border-bottom-color: #a855f7;
+  border-top-color: #5f9f97;
+
+  border-bottom-color: #5f9f97;
 }
 
 .dark .current-price-cell {
-  border-left-color: rgb(168 85 247 / 55%);
-  border-right-color: rgb(168 85 247 / 55%);
+  border-left-color: rgb(95 159 151 / 55%);
+
+  border-right-color: rgb(95 159 151 / 55%);
 }
+
+/* ============================================================
+   FORECAST ROWS
+   ============================================================ */
 
 .dashboard-price-row:hover {
   background-color: #eef7ee;
 }
 
 .dark .dashboard-price-row:hover {
-  background-color: #34383b;
+  background-color: #303936;
 }
 
 .dashboard-commodity-link:hover {
@@ -261,35 +675,109 @@ body {
 }
 
 .dark .dashboard-commodity-link:hover {
-  color: #a855f7;
+  color: #8fc8c0;
 }
 
-.header-nav-link:hover {
-  color: #202124;
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+.dark table {
+  color: #e7ecea;
 }
 
-.dark .header-nav-link:hover {
-  color: #c084fc;
+.dark thead.bg-ink {
+  background-color: #17201d;
+  color: #edf3f0;
 }
 
-.dark .header-about-link {
-  border: 1px solid rgb(192 132 252 / 65%);
+.dark thead.bg-ink th {
+  color: #edf3f0 !important;
 }
 
-.dark .header-about-link:hover {
-  border-color: #e9d5ff;
+.dark tbody tr {
+  border-color: rgb(231 236 234 / 8%);
 }
 
-/* visible keyboard focus, kept subtle */
+.dark tbody tr:hover {
+  background-color: #303936;
+}
+
+/* ============================================================
+   SIGNUP SCROLLBAR
+   ============================================================ */
+
+.signup-scrollbar {
+  scrollbar-width: thin;
+
+  scrollbar-color: rgb(63 111 107 / 45%) transparent;
+
+  scrollbar-gutter: stable;
+}
+
+.signup-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.signup-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+
+  margin-top: 18px;
+  margin-bottom: 18px;
+}
+
+.signup-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(63 111 107 / 45%);
+
+  border-radius: 999px;
+}
+
+.signup-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(63 111 107 / 70%);
+}
+
+.dark .signup-scrollbar {
+  scrollbar-color: rgb(95 159 151 / 55%) transparent;
+}
+
+.dark .signup-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(95 159 151 / 55%);
+}
+
+.dark .signup-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(127 186 178 / 75%);
+}
+
+/* ============================================================
+   KEYBOARD FOCUS
+   ============================================================ */
+
 a:focus-visible,
-button:focus-visible {
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: 2px solid #335b58;
+
   outline-offset: 3px;
 }
+
+.dark a:focus-visible,
+.dark button:focus-visible,
+.dark input:focus-visible,
+.dark select:focus-visible,
+.dark textarea:focus-visible {
+  outline-color: #7fbab2;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
+
     transition-duration: 0.001ms !important;
   }
 }

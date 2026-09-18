@@ -20,5 +20,10 @@
   "test_ratio": 0.2,
   "split_method": "chronological by unique reporting week",
   "minimum_series_observations": 16,
-  "baseline": "future price equals current price"
+  "baseline": "future price equals current price",
+  "trained_at": "2026-09-19T00:30:32",
+  "canonical_dataset": "D:\\SCHOOL\\RESEARCH\\CASE_STUDY\\price_data\\da_weekly_model_final.csv",
+  "source_numeric_records": 9144,
+  "usable_series": 96,
+  "feature_rows": 8455
 }

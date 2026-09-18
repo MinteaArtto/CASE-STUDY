@@ -39,8 +39,13 @@ OOD_MODEL_PATH = (
 # ============================================================
 
 DEVICE = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
+    "cuda"
+    if torch.cuda.is_available()
+    else "cpu"
 )
+
+if DEVICE.type == "cuda":
+    torch.backends.cudnn.benchmark = True
 
 
 # ============================================================
@@ -82,30 +87,65 @@ ALL_PROMPTS = (
 
 
 # ============================================================
-# IMAGE TRANSFORM FOR CNN
+# CNN IMAGE TRANSFORM
 # ============================================================
 
-cnn_transform = transforms.Compose([
-    transforms.Resize(
-        (224, 224)
-    ),
+cnn_transform = transforms.Compose(
+    [
+        transforms.Resize(
+            (224, 224)
+        ),
 
-    transforms.ToTensor(),
+        transforms.ToTensor(),
 
-    transforms.Normalize(
-        mean=[
-            0.485,
-            0.456,
-            0.406,
-        ],
+        transforms.Normalize(
+            mean=[
+                0.485,
+                0.456,
+                0.406,
+            ],
 
-        std=[
-            0.229,
-            0.224,
-            0.225,
-        ],
-    ),
-])
+            std=[
+                0.229,
+                0.224,
+                0.225,
+            ],
+        ),
+    ]
+)
+
+
+# ============================================================
+# GLOBAL MODEL CACHE
+# ============================================================
+
+MODEL_CACHE = {
+    "initialized": False,
+
+    "clip_model": None,
+    "clip_processor": None,
+    "clip_text_features": None,
+
+    "cnn_model": None,
+    "feature_extractor": None,
+
+    "tree": None,
+    "class_names": None,
+
+    "ood_data": None,
+}
+
+
+# ============================================================
+# LOGGING
+# ============================================================
+
+def log(*values):
+    print(
+        *values,
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 # ============================================================
@@ -132,7 +172,77 @@ def load_clip():
 
     model.eval()
 
-    return model, processor
+    return (
+        model,
+        processor,
+    )
+
+
+# ============================================================
+# PRECOMPUTE CLIP TEXT FEATURES
+# ============================================================
+
+def create_clip_text_features(
+    clip_model,
+    clip_processor,
+):
+
+    text_inputs = (
+        clip_processor(
+            text=ALL_PROMPTS,
+            return_tensors="pt",
+            padding=True,
+        )
+    )
+
+    text_inputs = {
+        key:
+            value.to(
+                DEVICE
+            )
+
+        for key, value
+        in text_inputs.items()
+    }
+
+    with torch.inference_mode():
+
+        text_outputs = (
+            clip_model.text_model(
+                input_ids=
+                    text_inputs[
+                        "input_ids"
+                    ],
+
+                attention_mask=
+                    text_inputs.get(
+                        "attention_mask"
+                    ),
+            )
+        )
+
+        pooled_output = (
+            text_outputs
+            .pooler_output
+        )
+
+        text_features = (
+            clip_model
+            .text_projection(
+                pooled_output
+            )
+        )
+
+        text_features = (
+            text_features
+            /
+            text_features.norm(
+                dim=-1,
+                keepdim=True,
+            )
+        )
+
+    return text_features
 
 
 # ============================================================
@@ -141,8 +251,10 @@ def load_clip():
 
 def load_cnn():
 
-    model = models.mobilenet_v2(
-        weights=None
+    model = (
+        models.mobilenet_v2(
+            weights=None
+        )
     )
 
     model.classifier[1] = (
@@ -152,11 +264,25 @@ def load_cnn():
         )
     )
 
-    model.load_state_dict(
-        torch.load(
-            CNN_MODEL_PATH,
-            map_location=DEVICE,
+    try:
+        state_dict = (
+            torch.load(
+                CNN_MODEL_PATH,
+                map_location=DEVICE,
+                weights_only=True,
+            )
         )
+
+    except TypeError:
+        state_dict = (
+            torch.load(
+                CNN_MODEL_PATH,
+                map_location=DEVICE,
+            )
+        )
+
+    model.load_state_dict(
+        state_dict
     )
 
     model = model.to(
@@ -173,7 +299,7 @@ def load_cnn():
 # ============================================================
 
 def create_feature_extractor(
-    cnn_model
+    cnn_model,
 ):
 
     extractor = nn.Sequential(
@@ -201,32 +327,38 @@ def create_feature_extractor(
 
 def load_decision_tree():
 
-    tree_data = joblib.load(
-        TREE_MODEL_PATH
+    tree_data = (
+        joblib.load(
+            TREE_MODEL_PATH
+        )
     )
 
-    # Supports the bundle produced by
-    # train_decision_tree.py
     if isinstance(
         tree_data,
-        dict
+        dict,
     ):
 
-        tree = tree_data[
-            "model"
-        ]
+        tree = (
+            tree_data[
+                "model"
+            ]
+        )
 
-        class_names = tree_data.get(
-            "class_names",
-            [
-                "Fresh",
-                "Rotten",
-            ],
+        class_names = (
+            tree_data.get(
+                "class_names",
+                [
+                    "Fresh",
+                    "Rotten",
+                ],
+            )
         )
 
     else:
 
-        tree = tree_data
+        tree = (
+            tree_data
+        )
 
         class_names = [
             "Fresh",
@@ -240,51 +372,392 @@ def load_decision_tree():
 
 
 # ============================================================
-# LOAD OOD MODEL
+# LOAD OOD DETECTOR
 # ============================================================
 
 def load_ood_detector():
 
-    data = joblib.load(
-        OOD_MODEL_PATH
+    return (
+        joblib.load(
+            OOD_MODEL_PATH
+        )
     )
-
-    return data
 
 
 # ============================================================
-# PRODUCE VALIDATION
+# STARTUP CUDA / INFERENCE WARM-UP
+#
+# This performs one synthetic CLIP image pass and one synthetic
+# MobileNet feature pass during backend startup.
+#
+# That moves the expensive first-inference CUDA initialization
+# away from the user's first Analyze request.
+# ============================================================
+
+def warm_up_models():
+
+    if DEVICE.type != "cuda":
+
+        log(
+            "CUDA not available. "
+            "Skipping GPU warm-up."
+        )
+
+        return
+
+    log(
+        "Warming up CUDA inference..."
+    )
+
+    clip_model = (
+        MODEL_CACHE[
+            "clip_model"
+        ]
+    )
+
+    text_features = (
+        MODEL_CACHE[
+            "clip_text_features"
+        ]
+    )
+
+    feature_extractor = (
+        MODEL_CACHE[
+            "feature_extractor"
+        ]
+    )
+
+    try:
+
+        with torch.inference_mode():
+
+            # ==================================================
+            # WARM UP CLIP VISION MODEL
+            #
+            # CLIP ViT-B/32 expects 224x224 pixel values.
+            # ==================================================
+
+            dummy_clip_pixels = (
+                torch.zeros(
+                    (
+                        1,
+                        3,
+                        224,
+                        224,
+                    ),
+                    dtype=torch.float32,
+                    device=DEVICE,
+                )
+            )
+
+            image_outputs = (
+                clip_model.vision_model(
+                    pixel_values=
+                        dummy_clip_pixels
+                )
+            )
+
+            pooled_output = (
+                image_outputs
+                .pooler_output
+            )
+
+            image_features = (
+                clip_model
+                .visual_projection(
+                    pooled_output
+                )
+            )
+
+            image_features = (
+                image_features
+                /
+                image_features.norm(
+                    dim=-1,
+                    keepdim=True,
+                )
+            )
+
+            logit_scale = (
+                clip_model
+                .logit_scale
+                .exp()
+            )
+
+            _ = (
+                logit_scale
+                *
+                image_features
+                @
+                text_features.T
+            )
+
+            # ==================================================
+            # WARM UP MOBILENET FEATURE EXTRACTOR
+            # ==================================================
+
+            dummy_cnn_tensor = (
+                torch.zeros(
+                    (
+                        1,
+                        3,
+                        224,
+                        224,
+                    ),
+                    dtype=torch.float32,
+                    device=DEVICE,
+                )
+            )
+
+            _ = (
+                feature_extractor(
+                    dummy_cnn_tensor
+                )
+            )
+
+        # ======================================================
+        # FORCE CUDA WORK TO FINISH BEFORE DECLARING READY
+        # ======================================================
+
+        torch.cuda.synchronize()
+
+        log(
+            "CUDA inference warm-up complete."
+        )
+
+    except Exception as error:
+
+        log(
+            "CUDA warm-up failed:",
+            error,
+        )
+
+        raise
+
+
+# ============================================================
+# INITIALIZE ALL MODELS ONCE
+# ============================================================
+
+def initialize_models():
+
+    if MODEL_CACHE[
+        "initialized"
+    ]:
+        return
+
+    log(
+        "========================================"
+    )
+
+    log(
+        "Initializing spoilage ML service..."
+    )
+
+    log(
+        "Device:",
+        DEVICE,
+    )
+
+    # ========================================================
+    # CLIP
+    # ========================================================
+
+    log(
+        "Loading CLIP..."
+    )
+
+    (
+        MODEL_CACHE[
+            "clip_model"
+        ],
+        MODEL_CACHE[
+            "clip_processor"
+        ],
+    ) = load_clip()
+
+    log(
+        "Precomputing CLIP text features..."
+    )
+
+    MODEL_CACHE[
+        "clip_text_features"
+    ] = create_clip_text_features(
+        MODEL_CACHE[
+            "clip_model"
+        ],
+
+        MODEL_CACHE[
+            "clip_processor"
+        ],
+    )
+
+    # ========================================================
+    # MOBILENETV2
+    # ========================================================
+
+    log(
+        "Loading MobileNetV2..."
+    )
+
+    MODEL_CACHE[
+        "cnn_model"
+    ] = load_cnn()
+
+    MODEL_CACHE[
+        "feature_extractor"
+    ] = create_feature_extractor(
+        MODEL_CACHE[
+            "cnn_model"
+        ]
+    )
+
+    # ========================================================
+    # DECISION TREE
+    # ========================================================
+
+    log(
+        "Loading Decision Tree..."
+    )
+
+    (
+        MODEL_CACHE[
+            "tree"
+        ],
+        MODEL_CACHE[
+            "class_names"
+        ],
+    ) = load_decision_tree()
+
+    # ========================================================
+    # OOD MODEL
+    # ========================================================
+
+    log(
+        "Loading calibrated KNN OOD detector..."
+    )
+
+    MODEL_CACHE[
+        "ood_data"
+    ] = load_ood_detector()
+
+    # ========================================================
+    # WARM UP GPU
+    # ========================================================
+
+    warm_up_models()
+
+    # ========================================================
+    # READY
+    # ========================================================
+
+    MODEL_CACHE[
+        "initialized"
+    ] = True
+
+    log(
+        "ML models loaded successfully."
+    )
+
+    log(
+        "========================================"
+    )
+
+
+# ============================================================
+# CLIP PRODUCE VALIDATION
 # ============================================================
 
 def validate_produce(
     image,
-    clip_model,
-    clip_processor,
 ):
 
-    inputs = clip_processor(
-        text=ALL_PROMPTS,
-        images=image,
-        return_tensors="pt",
-        padding=True,
+    clip_model = (
+        MODEL_CACHE[
+            "clip_model"
+        ]
     )
 
-    inputs = {
-        key: value.to(DEVICE)
+    clip_processor = (
+        MODEL_CACHE[
+            "clip_processor"
+        ]
+    )
+
+    text_features = (
+        MODEL_CACHE[
+            "clip_text_features"
+        ]
+    )
+
+    image_inputs = (
+        clip_processor(
+            images=image,
+            return_tensors="pt",
+        )
+    )
+
+    image_inputs = {
+        key:
+            value.to(
+                DEVICE
+            )
+
         for key, value
-        in inputs.items()
+        in image_inputs.items()
     }
 
-    with torch.no_grad():
+    with torch.inference_mode():
 
-        outputs = clip_model(
-            **inputs
+        image_outputs = (
+            clip_model.vision_model(
+                pixel_values=
+                    image_inputs[
+                        "pixel_values"
+                    ]
+            )
+        )
+
+        pooled_output = (
+            image_outputs
+            .pooler_output
+        )
+
+        image_features = (
+            clip_model
+            .visual_projection(
+                pooled_output
+            )
+        )
+
+        image_features = (
+            image_features
+            /
+            image_features.norm(
+                dim=-1,
+                keepdim=True,
+            )
+        )
+
+        logit_scale = (
+            clip_model
+            .logit_scale
+            .exp()
+        )
+
+        logits = (
+            logit_scale
+            *
+            image_features
+            @
+            text_features.T
         )
 
         probabilities = (
-            outputs
-            .logits_per_image
-            .softmax(dim=1)[0]
+            logits
+            .softmax(
+                dim=1
+            )[0]
         )
 
     produce_count = len(
@@ -309,7 +782,8 @@ def validate_produce(
 
     is_produce = (
         produce_score
-        > non_produce_score
+        >
+        non_produce_score
     )
 
     return {
@@ -330,25 +804,38 @@ def validate_produce(
 
 def extract_cnn_feature(
     image,
-    feature_extractor,
 ):
 
-    tensor = cnn_transform(
-        image
+    feature_extractor = (
+        MODEL_CACHE[
+            "feature_extractor"
+        ]
     )
 
-    tensor = tensor.unsqueeze(
-        0
+    tensor = (
+        cnn_transform(
+            image
+        )
     )
 
-    tensor = tensor.to(
-        DEVICE
+    tensor = (
+        tensor.unsqueeze(
+            0
+        )
     )
 
-    with torch.no_grad():
+    tensor = (
+        tensor.to(
+            DEVICE
+        )
+    )
 
-        feature = feature_extractor(
-            tensor
+    with torch.inference_mode():
+
+        feature = (
+            feature_extractor(
+                tensor
+            )
         )
 
     return (
@@ -359,25 +846,36 @@ def extract_cnn_feature(
 
 
 # ============================================================
-# OOD / NOVELTY CHECK
+# KNN OOD / NOVELTY CHECK
 # ============================================================
 
 def check_ood(
     feature,
-    ood_data,
 ):
 
-    scaler = ood_data[
-        "scaler"
-    ]
+    ood_data = (
+        MODEL_CACHE[
+            "ood_data"
+        ]
+    )
 
-    knn = ood_data[
-        "knn"
-    ]
+    scaler = (
+        ood_data[
+            "scaler"
+        ]
+    )
 
-    k_neighbors = ood_data[
-        "k_neighbors"
-    ]
+    knn = (
+        ood_data[
+            "knn"
+        ]
+    )
+
+    k_neighbors = (
+        ood_data[
+            "k_neighbors"
+        ]
+    )
 
     p95 = float(
         ood_data[
@@ -406,11 +904,15 @@ def check_ood(
     distances, _ = (
         knn.kneighbors(
             scaled_feature,
-            n_neighbors=k_neighbors,
+
+            n_neighbors=
+                k_neighbors,
         )
     )
 
-    distances = distances[0]
+    distances = (
+        distances[0]
+    )
 
     nearest_distance = float(
         distances[0]
@@ -422,19 +924,28 @@ def check_ood(
         )
     )
 
-    if mean_distance <= p95:
+    if (
+        mean_distance
+        <= p95
+    ):
 
         novelty_level = (
             "known_like"
         )
 
-    elif mean_distance <= p97:
+    elif (
+        mean_distance
+        <= p97
+    ):
 
         novelty_level = (
             "slightly_unusual"
         )
 
-    elif mean_distance <= p99:
+    elif (
+        mean_distance
+        <= p99
+    ):
 
         novelty_level = (
             "unusual_but_acceptable"
@@ -483,9 +994,19 @@ def check_ood(
 
 def classify_spoilage(
     feature,
-    tree,
-    class_names,
 ):
+
+    tree = (
+        MODEL_CACHE[
+            "tree"
+        ]
+    )
+
+    class_names = (
+        MODEL_CACHE[
+            "class_names"
+        ]
+    )
 
     prediction_index = int(
         tree.predict(
@@ -513,7 +1034,10 @@ def classify_spoilage(
 
     class_probabilities = {}
 
-    for index, name in enumerate(
+    for (
+        index,
+        name,
+    ) in enumerate(
         class_names
     ):
 
@@ -538,12 +1062,14 @@ def classify_spoilage(
 
 
 # ============================================================
-# COMPLETE PIPELINE
+# COMPLETE ANALYSIS PIPELINE
 # ============================================================
 
 def analyze_image(
-    image_path
+    image_path,
 ):
+
+    initialize_models()
 
     image_path = Path(
         image_path
@@ -552,7 +1078,8 @@ def analyze_image(
     if not image_path.exists():
 
         return {
-            "success": False,
+            "success":
+                False,
 
             "status":
                 "error",
@@ -561,18 +1088,18 @@ def analyze_image(
                 "Image file does not exist.",
         }
 
-
-    # --------------------------------------------------------
-    # Load image
-    # --------------------------------------------------------
-
     try:
 
-        image = Image.open(
+        with Image.open(
             image_path
-        ).convert(
-            "RGB"
-        )
+        ) as source_image:
+
+            image = (
+                source_image
+                .convert(
+                    "RGB"
+                )
+            )
 
     except Exception as error:
 
@@ -584,48 +1111,22 @@ def analyze_image(
                 "error",
 
             "message":
-                f"Unable to open image: {error}",
+                (
+                    f"Unable to open image: "
+                    f"{error}"
+                ),
         }
-
-
-    # --------------------------------------------------------
-    # Load models
-    # --------------------------------------------------------
-
-    clip_model, clip_processor = (
-        load_clip()
-    )
-
-    cnn_model = load_cnn()
-
-    feature_extractor = (
-        create_feature_extractor(
-            cnn_model
-        )
-    )
-
-    tree, class_names = (
-        load_decision_tree()
-    )
-
-    ood_data = (
-        load_ood_detector()
-    )
-
 
     # ========================================================
     # STAGE 1
-    # PRODUCE VALIDATOR
+    # CLIP PRODUCE VALIDATION
     # ========================================================
 
     produce_result = (
         validate_produce(
-            image,
-            clip_model,
-            clip_processor,
+            image
         )
     )
-
 
     if not produce_result[
         "is_produce"
@@ -673,7 +1174,6 @@ def analyze_image(
                 None,
         }
 
-
     # ========================================================
     # STAGE 2
     # CNN FEATURE EXTRACTION
@@ -681,11 +1181,9 @@ def analyze_image(
 
     feature = (
         extract_cnn_feature(
-            image,
-            feature_extractor,
+            image
         )
     )
-
 
     # ========================================================
     # STAGE 3
@@ -694,11 +1192,9 @@ def analyze_image(
 
     ood_result = (
         check_ood(
-            feature,
-            ood_data,
+            feature
         )
     )
-
 
     if not ood_result[
         "accepted"
@@ -780,7 +1276,6 @@ def analyze_image(
                 None,
         }
 
-
     # ========================================================
     # STAGE 4
     # DECISION TREE
@@ -788,16 +1283,9 @@ def analyze_image(
 
     spoilage_result = (
         classify_spoilage(
-            feature,
-            tree,
-            class_names,
+            feature
         )
     )
-
-
-    # ========================================================
-    # FINAL ACCEPTED RESULT
-    # ========================================================
 
     return {
         "success":
@@ -907,7 +1395,10 @@ def analyze_image(
                         4,
                     )
 
-                for key, value
+                for (
+                    key,
+                    value,
+                )
                 in spoilage_result[
                     "probabilities"
                 ].items()
@@ -917,10 +1408,161 @@ def analyze_image(
 
 
 # ============================================================
+# PERSISTENT SERVER MODE
+# ============================================================
+
+def run_server():
+
+    try:
+
+        initialize_models()
+
+    except Exception as error:
+
+        print(
+            json.dumps(
+                {
+                    "type":
+                        "startup_error",
+
+                    "message":
+                        str(error),
+                }
+            ),
+            flush=True,
+        )
+
+        raise
+
+    # ========================================================
+    # ONLY REPORT READY AFTER MODEL + CUDA WARM-UP COMPLETES
+    # ========================================================
+
+    print(
+        json.dumps(
+            {
+                "type":
+                    "ready",
+
+                "device":
+                    str(
+                        DEVICE
+                    ),
+            }
+        ),
+        flush=True,
+    )
+
+    for raw_line in sys.stdin:
+
+        raw_line = (
+            raw_line.strip()
+        )
+
+        if not raw_line:
+            continue
+
+        request_id = None
+
+        try:
+
+            payload = (
+                json.loads(
+                    raw_line
+                )
+            )
+
+            request_id = (
+                payload.get(
+                    "id"
+                )
+            )
+
+            image_path = (
+                payload.get(
+                    "image_path"
+                )
+            )
+
+            if not image_path:
+
+                raise ValueError(
+                    "image_path is required."
+                )
+
+            result = (
+                analyze_image(
+                    image_path
+                )
+            )
+
+            response = {
+                "id":
+                    request_id,
+
+                "result":
+                    result,
+            }
+
+        except Exception as error:
+
+            log(
+                "Classification request failed:",
+                error,
+            )
+
+            response = {
+                "id":
+                    request_id,
+
+                "result": {
+                    "success":
+                        False,
+
+                    "status":
+                        "error",
+
+                    "message":
+                        str(
+                            error
+                        ),
+                },
+            }
+
+        print(
+            json.dumps(
+                response
+            ),
+            flush=True,
+        )
+
+
+# ============================================================
 # COMMAND LINE
 # ============================================================
 
 if __name__ == "__main__":
+
+    # ========================================================
+    # PERSISTENT MODE
+    # ========================================================
+
+    if (
+        len(sys.argv) >= 2
+        and
+        sys.argv[1]
+        == "--server"
+    ):
+
+        run_server()
+
+        raise SystemExit(
+            0
+        )
+
+    # ========================================================
+    # ONE-SHOT MODE
+    # ========================================================
 
     if len(sys.argv) < 2:
 
@@ -945,15 +1587,20 @@ if __name__ == "__main__":
             )
         )
 
-        raise SystemExit(1)
+        raise SystemExit(
+            1
+        )
 
-
-    image_path = sys.argv[1]
+    image_path = (
+        sys.argv[1]
+    )
 
     try:
 
-        result = analyze_image(
-            image_path
+        result = (
+            analyze_image(
+                image_path
+            )
         )
 
         print(
@@ -972,7 +1619,9 @@ if __name__ == "__main__":
                 "error",
 
             "message":
-                str(error),
+                str(
+                    error
+                ),
         }
 
         print(
@@ -981,4 +1630,6 @@ if __name__ == "__main__":
             )
         )
 
-        raise SystemExit(1)
+        raise SystemExit(
+            1
+        )

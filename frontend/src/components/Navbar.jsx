@@ -11,10 +11,10 @@ export default function HowItWorksCard() {
       <div className="p-6">
         <h3 className="font-display font-bold text-base mb-2">How it works</h3>
         <p className="text-sm text-ink/70 leading-relaxed">
-          MamaV pulls historical and current price data for each tracked
-          product, then shows recent movement at a glance — so you know
-          what's happening in the market before you even open a product's
-          full forecast.
+          MaMaV pulls historical and current price data for each tracked
+          product, then shows recent movement at a glance — so you know what's
+          happening in the market before you even open a product's full
+          forecast.
         </p>
         <button className="mt-5 bg-ink text-cream-light text-sm px-6 py-2 rounded-full hover:bg-ink/90 transition-colors">
           VIEW

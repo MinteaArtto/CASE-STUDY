@@ -36,6 +36,113 @@ LOG_CSV = os.path.join(
 )
 
 
+# ============================================================
+# CURRENT PRODUCTION CATALOG
+#
+# This is the same 100-series catalog used by the forecasting
+# system. For now, loading the catalog does NOT change the
+# existing extraction behavior yet. It gives us one source of
+# truth for the next step, where the parser will be expanded
+# from the old hardcoded target list to the full DA catalog.
+# ============================================================
+
+CATALOG_CSV = os.path.join(
+    BASE_DIR,
+    "current_catalog_forecast_eligibility.csv"
+)
+
+
+def load_current_catalog():
+
+    if not os.path.isfile(CATALOG_CSV):
+        raise FileNotFoundError(
+            f"Current catalog CSV was not found: {CATALOG_CSV}"
+        )
+
+    catalog = []
+
+    with open(
+        CATALOG_CSV,
+        "r",
+        encoding="utf-8-sig",
+        newline=""
+    ) as file:
+
+        reader = csv.DictReader(file)
+
+        required_columns = {
+            "series_key",
+            "category",
+            "commodity",
+            "specification",
+            "unit",
+        }
+
+        available_columns = set(
+            reader.fieldnames or []
+        )
+
+        missing_columns = (
+            required_columns
+            - available_columns
+        )
+
+        if missing_columns:
+            raise ValueError(
+                "Current catalog CSV is missing required columns: "
+                + ", ".join(
+                    sorted(missing_columns)
+                )
+            )
+
+        for row in reader:
+
+            series_key = (
+                row.get("series_key")
+                or ""
+            ).strip()
+
+            category = (
+                row.get("category")
+                or ""
+            ).strip()
+
+            commodity = (
+                row.get("commodity")
+                or ""
+            ).strip()
+
+            specification = (
+                row.get("specification")
+                or ""
+            ).strip()
+
+            unit = (
+                row.get("unit")
+                or ""
+            ).strip()
+
+            if not series_key:
+                continue
+
+            if not commodity:
+                continue
+
+            catalog.append({
+                "series_key": series_key,
+                "category": category,
+                "commodity": commodity,
+                "specification": specification,
+                "unit": unit,
+            })
+
+    return catalog
+
+
+CURRENT_CATALOG = load_current_catalog()
+
+
+
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 )

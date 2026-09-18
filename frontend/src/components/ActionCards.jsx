@@ -1,52 +1,199 @@
-import { AlertCircle } from "lucide-react";
+import { TrendingUp, PackageCheck, BellRing } from "lucide-react";
 
 const CARDS = [
   {
+    icon: TrendingUp,
+
     title: "Pricing guidance",
-    desc: "Use forecasted market prices to support decisions on when and how to price selected perishable goods.",
-    example: "Forecast indicates a potential price increase — consider adjusting your selling strategy.",
+
+    description:
+      "Compare current and forecasted market prices to better understand possible short-term price movement.",
   },
+
   {
+    icon: PackageCheck,
+
     title: "Inventory prioritization",
-    desc: "Identify products that may require earlier selling or prioritization based on their spoilage classification.",
-    example: "Product classified as higher spoilage risk — prioritize for earlier sale or handling.",
+
+    description:
+      "Use spoilage classification results to identify which products may require earlier selling or handling.",
   },
+
   {
-    title: "Spoilage alerts",
-    desc: "Highlight products identified as being at risk of spoilage so appropriate action can be considered.",
-    example: "Spoilage risk detected — consider markdown, sale, or appropriate handling.",
+    icon: BellRing,
+
+    title: "Spoilage awareness",
+
+    description:
+      "Review visual spoilage results and recommendations to support more informed product decisions.",
   },
 ];
 
 export default function ActionCards() {
   return (
-    <section className="bg-linear-to-b from-mint to-white px-6 py-24 text-center">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="font-display font-bold text-3xl md:text-4xl tracking-wide">
-          WHAT SHOULD YOU DO NEXT?
-        </h2>
-        <p className="text-ink/70 mt-4 max-w-xl mx-auto leading-relaxed">
-          MamaV translates forecasting and spoilage-classification results
-          into actionable decision-support outputs.
-        </p>
+    <section
+      id="decision-support"
+      className="
+        bg-linear-to-b
+        from-cream-light
+        to-mint-light/40
 
-        <div className="grid sm:grid-cols-3 gap-6 mt-12 text-center">
-          {CARDS.map(({ title, desc, example }) => (
-            <div
+        px-4
+        sm:px-6
+
+        py-16
+        sm:py-20
+        lg:py-24
+      "
+    >
+      <div className="max-w-6xl mx-auto">
+        <div className="max-w-2xl">
+          <p
+            className="
+              text-xs
+              sm:text-sm
+
+              font-medium
+
+              text-teal-dark
+            "
+          >
+            Decision support
+          </p>
+
+          <h2
+            className="
+              mt-3
+
+              font-display
+              font-bold
+
+              text-3xl
+              sm:text-4xl
+              md:text-5xl
+
+              tracking-tight
+              leading-tight
+
+              text-ink
+            "
+          >
+            Turn analysis into useful information.
+          </h2>
+
+          <p
+            className="
+              mt-5
+
+              text-base
+              sm:text-lg
+
+              text-ink/60
+
+              leading-7
+              sm:leading-8
+            "
+          >
+            MaMaV combines price forecasts and spoilage classification results
+            into clear outputs that can support day-to-day decisions involving
+            selected perishable goods.
+          </p>
+        </div>
+
+        <div
+          className="
+            grid
+            sm:grid-cols-2
+            lg:grid-cols-3
+
+            gap-4
+            sm:gap-5
+            lg:gap-6
+
+            mt-9
+            sm:mt-12
+          "
+        >
+          {CARDS.map(({ icon: Icon, title, description }) => (
+            <article
               key={title}
-              className="bg-white/90 rounded-2xl p-6 border border-white/50 flex flex-col items-center"
+              className="
+                  group
+
+                  rounded-2xl
+                  sm:rounded-3xl
+
+                  border
+                  border-ink/10
+
+                  bg-white/80
+
+                  p-5
+                  sm:p-6
+                  lg:p-7
+
+                  transition-all
+                  duration-300
+
+                  hover:-translate-y-1
+
+                  hover:shadow-xl
+                  hover:shadow-ink/5
+                "
             >
-              <div className="w-10 h-10 rounded-full border border-ink/30 flex items-center justify-center mb-4">
-                <AlertCircle className="w-5 h-5" strokeWidth={1.75} />
+              <div
+                className="
+                    w-11
+                    h-11
+
+                    sm:w-12
+                    sm:h-12
+
+                    rounded-xl
+                    sm:rounded-2xl
+
+                    bg-mint-light
+
+                    flex
+                    items-center
+                    justify-center
+
+                    text-teal-dark
+                  "
+              >
+                <Icon className="w-5 h-5" />
               </div>
-              <h3 className="font-display font-bold text-sm">{title}</h3>
-              <p className="text-sm text-ink/60 mt-2 leading-relaxed">
-                {desc}
+
+              <h3
+                className="
+                    mt-5
+                    sm:mt-6
+
+                    font-display
+                    font-bold
+
+                    text-lg
+
+                    text-ink
+                  "
+              >
+                {title}
+              </h3>
+
+              <p
+                className="
+                    mt-3
+
+                    text-sm
+
+                    text-ink/60
+
+                    leading-6
+                  "
+              >
+                {description}
               </p>
-              <p className="text-xs text-ink/50 mt-4 pt-4 border-t border-ink/10 w-full">
-                {example}
-              </p>
-            </div>
+            </article>
           ))}
         </div>
       </div>
