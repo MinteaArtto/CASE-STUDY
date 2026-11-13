@@ -55,7 +55,6 @@ ml/datasets/produce_detection_expanded/
 ml/datasets/ripeness_expanded/
 ml/model/produce_detector/
 ml/model/produce_detector_pilot/
-ml/model/produce_detector_expanded/
 ml/model/ripeness_classifier_pilot/
 ml/model/ripeness_classifier_expanded/
 yolo11n.pt
