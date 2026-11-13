@@ -1,0 +1,50 @@
+MODEL EVALUATION SUMMARY
+========================
+
+DA WEEKLY PRICES (regression; a confusion matrix is not applicable)
+Chronological weekly split; model: LinearRegression; target: future price. The baseline predicts the current price.
+
+Old DA weekly (pre-all-regions snapshot)
+  File: da_weekly_model_final_before_all_regions_20261111.csv
+  Source rows: 19,541; series: 227; feature rows: 17,964
+  1w: cutoff=2026-03-09; train=14,677; test=2,990; MAE PHP 4.1392; RMSE PHP 10.7132; R2=0.989182; baseline MAE PHP 3.8296; baseline RMSE PHP 10.7516; baseline R2=0.989104; beats baseline MAE=False
+  2w: cutoff=2026-03-02; train=14,428; test=2,964; MAE PHP 6.8164; RMSE PHP 18.0170; R2=0.969393; baseline MAE PHP 6.3412; baseline RMSE PHP 17.7280; baseline R2=0.970367; beats baseline MAE=False
+  4w: cutoff=2026-02-02; train=13,990; test=2,898; MAE PHP 11.1877; RMSE PHP 27.3506; R2=0.928875; baseline MAE PHP 10.2653; baseline RMSE PHP 26.7654; baseline R2=0.931885; beats baseline MAE=False
+
+Earlier archived DA weekly (before 2M4AFN05-07 update)
+  File: da_weekly_model_final_before_2M4AFN05-07_20261111.csv
+  Source rows: 9,882; series: 133; feature rows: 8,747
+  1w: cutoff=2026-03-09; train=6,573; test=1,986; MAE PHP 5.3735; RMSE PHP 12.5496; R2=0.986919; baseline MAE PHP 4.5215; baseline RMSE PHP 11.8939; baseline R2=0.988251; beats baseline MAE=False
+  2w: cutoff=2026-03-02; train=6,430; test=1,962; MAE PHP 8.3403; RMSE PHP 20.5201; R2=0.964970; baseline MAE PHP 7.1905; baseline RMSE PHP 19.2216; baseline R2=0.969263; beats baseline MAE=False
+  4w: cutoff=2026-02-02; train=6,204; test=1,900; MAE PHP 12.6178; RMSE PHP 29.1827; R2=0.928477; baseline MAE PHP 11.1709; baseline RMSE PHP 28.5209; baseline R2=0.931684; beats baseline MAE=False
+
+New current merged DA weekly
+  File: da_weekly_model_final.csv
+  Source rows: 219,124; series: 3,176; feature rows: 183,232
+  1w: cutoff=2026-03-09; train=149,875; test=26,782; MAE PHP 1.8271; RMSE PHP 4.6842; R2=0.990528; baseline MAE PHP 1.9309; baseline RMSE PHP 5.1698; baseline R2=0.988463; beats baseline MAE=True
+  2w: cutoff=2026-03-02; train=144,612; test=25,873; MAE PHP 3.6350; RMSE PHP 8.7368; R2=0.967548; baseline MAE PHP 3.5905; baseline RMSE PHP 9.0103; baseline R2=0.965484; beats baseline MAE=False
+  4w: cutoff=2026-02-02; train=134,456; test=24,064; MAE PHP 6.8403; RMSE PHP 14.5977; R2=0.911597; baseline MAE PHP 6.1739; baseline RMSE PHP 13.9710; baseline R2=0.919026; beats baseline MAE=False
+
+FOOD FRESHNESS / SPOILAGE (binary Fresh/Rotten)
+Held-out Tomato set; Tomato excluded from training; 8,028 test images (4,014 Fresh, 4,014 Rotten). Matrix rows=actual and columns=predicted; order: Fresh, Rotten.
+
+CNN: accuracy=73.5800%
+  confusion matrix: [[3933, 81], [2040, 1974]]
+  per class (precision / recall / F1 / support):
+    Fresh: 0.6585 / 0.9798 / 0.7876 / 4014
+    Rotten: 0.9606 / 0.4918 / 0.6505 / 4014
+
+CNN + decision tree: accuracy=71.7987%
+  confusion matrix: [[3881, 133], [2131, 1883]]
+  per class (precision / recall / F1 / support):
+    Fresh: 0.6455 / 0.9669 / 0.7742 / 4014
+    Rotten: 0.9340 / 0.4691 / 0.6245 / 4014
+
+RIPENESS (separate three-class task: Unripe/Ripe/Overripe)
+Test accuracy=0.7976; macro-F1=0.7722; validation macro-F1=0.7734
+Confusion matrix (rows=actual, columns=predicted; order: Unripe, Ripe, Overripe):
+  [232, 53, 14]
+  [53, 312, 9]
+  [8, 15, 55]
+
+Notes: old DA result labelled pre-all-regions uses the 2026-11-11 snapshot; the earlier pre-2M4AFN05-07 snapshot is included as a separate historical version. DA forecast tables are not classification matrices. The Fresh/Rotten image folders in this checkout are empty, so the binary food evaluation above uses the saved held-out Tomato results, not a fresh rerun of the full image dataset.

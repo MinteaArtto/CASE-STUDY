@@ -252,6 +252,19 @@ def load_ood_detector():
     return data
 
 
+def load_pipeline_models():
+    clip_model, clip_processor = load_clip()
+    cnn_model = load_cnn()
+
+    return {
+        "clip_model": clip_model,
+        "clip_processor": clip_processor,
+        "feature_extractor": create_feature_extractor(cnn_model),
+        "tree": load_decision_tree(),
+        "ood_data": load_ood_detector(),
+    }
+
+
 # ============================================================
 # PRODUCE VALIDATION
 # ============================================================
@@ -542,7 +555,8 @@ def classify_spoilage(
 # ============================================================
 
 def analyze_image(
-    image_path
+    image_path,
+    pipeline_models=None,
 ):
 
     image_path = Path(
@@ -592,25 +606,14 @@ def analyze_image(
     # Load models
     # --------------------------------------------------------
 
-    clip_model, clip_processor = (
-        load_clip()
-    )
+    if pipeline_models is None:
+        pipeline_models = load_pipeline_models()
 
-    cnn_model = load_cnn()
-
-    feature_extractor = (
-        create_feature_extractor(
-            cnn_model
-        )
-    )
-
-    tree, class_names = (
-        load_decision_tree()
-    )
-
-    ood_data = (
-        load_ood_detector()
-    )
+    clip_model = pipeline_models["clip_model"]
+    clip_processor = pipeline_models["clip_processor"]
+    feature_extractor = pipeline_models["feature_extractor"]
+    tree, class_names = pipeline_models["tree"]
+    ood_data = pipeline_models["ood_data"]
 
 
     # ========================================================
