@@ -11,13 +11,63 @@ export default function Classifier() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
   const inputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   useEffect(() => {
     return () => {
       if (previewSrc && previewSrc.startsWith("blob:")) URL.revokeObjectURL(previewSrc);
     };
   }, [previewSrc]);
+
+  useEffect(() => {
+    if (!cameraOpen) return undefined;
+
+    let cancelled = false;
+
+    async function startCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError("Camera access is not available in this browser. Use HTTPS or localhost, or choose an image file.");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch (cameraException) {
+        if (cancelled) return;
+        if (cameraException.name === "NotAllowedError" || cameraException.name === "PermissionDeniedError") {
+          setCameraError("Camera permission was denied. Allow camera access in your browser settings, or choose an image file.");
+        } else if (cameraException.name === "NotFoundError" || cameraException.name === "DevicesNotFoundError") {
+          setCameraError("No camera was found on this device. Choose an image file instead.");
+        } else {
+          setCameraError(cameraException.message || "Unable to access the camera. Choose an image file instead.");
+        }
+      }
+    }
+
+    startCamera();
+
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, [cameraOpen]);
 
   async function analyzeImage(file) {
     setError(null);
@@ -83,9 +133,48 @@ export default function Classifier() {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     setSelectedFile(file);
-    // set a lightweight preview URL (optional) but do not auto-analyze
-    const url = URL.createObjectURL(file);
-    setPreviewSrc(url);
+    setPreviewSrc(URL.createObjectURL(file));
+    setResult(null);
+    setError(null);
+    setCameraOpen(false);
+    e.target.value = "";
+  }
+
+  function capturePhoto() {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setCameraError("The camera is still starting. Please try again in a moment.");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setCameraError("The photo could not be captured. Please try again.");
+      return;
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setCameraError("The photo could not be captured. Please try again.");
+        return;
+      }
+
+      const file = new File([blob], `camera-photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+      setSelectedFile(file);
+      setPreviewSrc(URL.createObjectURL(file));
+      setResult(null);
+      setError(null);
+      setCameraOpen(false);
+    }, "image/jpeg", 0.92);
+  }
+
+  function openCamera() {
+    setCameraError(null);
+    setCameraReady(false);
+    setCameraOpen(true);
   }
 
   function clearImage() {
@@ -93,6 +182,9 @@ export default function Classifier() {
     setPreviewSrc(null);
     setResult(null);
     setError(null);
+    setCameraError(null);
+    setCameraOpen(false);
+    setCameraReady(false);
     if (inputRef.current) inputRef.current.value = null;
   }
 
@@ -124,12 +216,18 @@ export default function Classifier() {
             </label>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
             <button
               onClick={() => inputRef.current && inputRef.current.click()}
               className="px-4 py-2 rounded-md bg-cream text-ink border border-ink/10"
             >
               Choose file
+            </button>
+            <button
+              onClick={openCamera}
+              className="px-4 py-2 rounded-md bg-cream text-ink border border-ink/10"
+            >
+              Take photo
             </button>
             <button
               onClick={() => {
@@ -147,6 +245,44 @@ export default function Classifier() {
               Reset
             </button>
           </div>
+
+          {cameraOpen && (
+            <div className="w-full max-w-xl rounded-2xl bg-white p-4 shadow-sm border border-ink/10">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <h2 className="font-semibold">Take a product photo</h2>
+                <button
+                  type="button"
+                  onClick={() => setCameraOpen(false)}
+                  className="px-3 py-1 rounded-md border border-ink/10 text-sm"
+                >
+                  Close camera
+                </button>
+              </div>
+              {cameraError ? (
+                <p role="alert" className="text-sm text-red-600 py-4">{cameraError}</p>
+              ) : (
+                <>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    onLoadedMetadata={() => setCameraReady(true)}
+                    className="w-full max-h-96 rounded-xl bg-ink object-contain"
+                    aria-label="Live camera preview"
+                  />
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    disabled={!cameraReady}
+                    className="mt-4 w-full px-4 py-2 rounded-md bg-ink text-cream-light disabled:opacity-50"
+                  >
+                    {cameraReady ? "Capture photo" : "Starting camera..."}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="w-full">
             {loading && (

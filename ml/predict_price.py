@@ -143,6 +143,7 @@ def forecast_series(series_key):
         "commodity": latest_record.get("commodity_normalized", None),
         "specification": latest_record.get("specification_normalized", None),
         "unit": latest_record.get("unit", None),
+        "currency": latest_record.get("currency", "PHP"),
         "latest_date": latest_date.date().isoformat(),
         "current_price": round(current_price, 2),
         "forecasts": {},
@@ -186,6 +187,7 @@ def get_eligible_series(limit=None):
                 "commodity_normalized",
                 "specification_normalized",
                 "unit",
+                "currency",
             ]
         ]
         .drop_duplicates()
@@ -212,6 +214,7 @@ def get_eligible_series(limit=None):
                 "commodity": row["commodity_normalized"],
                 "specification": specification,
                 "unit": row["unit"],
+                "currency": row["currency"],
                 "record_count": int(row["record_count"]),
             }
         )

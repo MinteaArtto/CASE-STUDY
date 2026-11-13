@@ -41,6 +41,12 @@ const priceRecordSchema = new mongoose.Schema(
       trim: true,
     },
 
+    currency: {
+      type: String,
+      default: "PHP",
+      trim: true,
+    },
+
     weeklyAveragePrice: {
       type: Number,
       required: true,

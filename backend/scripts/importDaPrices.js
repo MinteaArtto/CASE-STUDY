@@ -109,6 +109,8 @@ async function importPrices() {
 
         unit: row.unit,
 
+        currency: row.currency || "PHP",
+
         weeklyAveragePrice: price,
 
         seriesKey: row.series_key,

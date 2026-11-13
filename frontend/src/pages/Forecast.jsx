@@ -1461,13 +1461,15 @@ export default function Forecast() {
           forecastData,
           historyData,
         ]) => {
+          const requestErrors = [];
+
           if (
             !forecastData ||
             !forecastData.success
           ) {
-            setError(
+            requestErrors.push(
               forecastData?.message ||
-                "Failed to fetch forecast"
+                "Failed to fetch forecast",
             );
           } else {
             const model = forecastData.forecast;
@@ -1502,12 +1504,20 @@ export default function Forecast() {
             !historyData.success
           ) {
             setHistory([]);
+            requestErrors.push(
+              historyData?.message ||
+                "Failed to fetch price history",
+            );
           } else {
             setHistoryCategory(historyData.category || "");
             setHistory((historyData.history || []).map((row) => ({
               ...row,
               date: row.weekStart,
             })));
+          }
+
+          if (requestErrors.length) {
+            setError(requestErrors.join(" "));
           }
         }
       )
@@ -1601,17 +1611,17 @@ export default function Forecast() {
               )
             : 0;
 
+        const price = Number(row.price);
+        if (!Number.isFinite(price) || price <= 0) return null;
+
         return {
           x: relativeWeek,
-          y:
-            Number(
-              row.price
-            ) || 0,
+          y: price,
           date: row.date,
           future: false,
         };
       }
-    );
+    ).filter(Boolean);
 
   let chartWithFuture =
     chartData.length
@@ -1759,7 +1769,13 @@ export default function Forecast() {
                 <button
                   key={product.series_key}
                   type="button"
-                  onClick={() => setSelectedProduct(product.series_key)}
+                  onClick={() => {
+                    setForecast(null);
+                    setHistory([]);
+                    setHistoryCategory("");
+                    setError(null);
+                    setSelectedProduct(product.series_key);
+                  }}
                   className={`text-left rounded-xl px-4 py-3 transition-colors ${
                     selectedProduct === product.series_key
                       ? "bg-ink text-cream-light"
@@ -1819,6 +1835,15 @@ export default function Forecast() {
                   {selectedProductInfo.specification} · {selectedProductInfo.unit}
                 </p>
               )}
+              {history.some(
+                (row) =>
+                  row.dataQualityFlag ===
+                  "estimated_monthly_interpolation",
+              ) && (
+                <p className="text-sm text-amber-700 mt-2">
+                  Prices are in Philippine pesos per kg. Weekly values and forecasts are estimates interpolated from monthly farmgate prices for this location.
+                </p>
+              )}
             </div>
 
             {/*
@@ -1867,18 +1892,7 @@ export default function Forecast() {
             <div className="w-full rounded-lg overflow-visible px-0">
               <SimpleLineChart
                 unit={selectedProductInfo?.unit || "unit"}
-                data={
-                  chartWithFuture.length
-                    ? chartWithFuture
-                    : [
-                        {
-                          x: 0,
-                          y: 0,
-                          future:
-                            false,
-                        },
-                      ]
-                }
+                data={chartWithFuture}
               />
             </div>
           </div>

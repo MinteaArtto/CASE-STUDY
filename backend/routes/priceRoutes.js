@@ -1,12 +1,17 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const { spawn } = require("child_process");
-
-const PriceRecord = require("../models/PriceRecord");
+const csv = require("csv-parser");
 
 const router = express.Router();
 
 const PROJECT_ROOT = path.join(__dirname, "..", "..");
+const PRICE_DATASET = path.join(
+  PROJECT_ROOT,
+  "price_data",
+  "da_weekly_model_final.csv",
+);
 
 const PREDICT_SCRIPT = path.join(PROJECT_ROOT, "ml", "predict_price.py");
 
@@ -56,6 +61,48 @@ function runPython(args) {
         reject(new Error(`Python returned invalid JSON: ${stdout}`));
       }
     });
+  });
+}
+
+function readPriceHistory(seriesKey) {
+  return new Promise((resolve, reject) => {
+    const records = [];
+    const source = fs.createReadStream(PRICE_DATASET);
+    const parser = csv({
+      mapHeaders: ({ header }) => header.replace(/^\uFEFF/, "").trim(),
+    });
+
+    source.on("error", reject);
+    parser.on("error", reject);
+    parser.on("data", (row) => {
+      if (row.series_key !== seriesKey) return;
+
+      const price = Number(row.weekly_average_price);
+      if (!row.week_start || !Number.isFinite(price) || price <= 0) return;
+
+      records.push({
+        weekStart: row.week_start,
+        weekEnd: row.week_end || null,
+        year: Number(row.year),
+        category: row.category_normalized || row.category_raw,
+        commodity: row.commodity_normalized || row.commodity_raw,
+        specification:
+          row.specification_normalized ||
+          row.specification_raw ||
+          "(no specification)",
+        unit: row.unit,
+        currency: row.currency || "PHP",
+        price,
+        dataQualityFlag: row.data_quality_flag || null,
+        sourceFile: row.source_file || null,
+      });
+    });
+    parser.on("end", () => {
+      records.sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+      resolve(records);
+    });
+
+    source.pipe(parser);
   });
 }
 
@@ -185,29 +232,7 @@ router.get("/history", async (req, res) => {
       });
     }
 
-    // --------------------------------------------------------
-    // GET HISTORY FROM MONGODB
-    // --------------------------------------------------------
-
-    const records = await PriceRecord.find({
-      seriesKey: seriesKey.trim(),
-    })
-      .sort({
-        weekStart: 1,
-      })
-      .select({
-        _id: 0,
-        weekStart: 1,
-        weekEnd: 1,
-        year: 1,
-        category: 1,
-        commodity: 1,
-        specification: 1,
-        unit: 1,
-        weeklyAveragePrice: 1,
-        seriesKey: 1,
-      })
-      .lean();
+    const records = await readPriceHistory(seriesKey.trim());
 
     // --------------------------------------------------------
     // NO RECORDS FOUND
@@ -221,19 +246,6 @@ router.get("/history", async (req, res) => {
     }
 
     // --------------------------------------------------------
-    // FORMAT HISTORY
-    // --------------------------------------------------------
-
-    const history = records.map((record) => ({
-      weekStart: record.weekStart,
-
-      weekEnd: record.weekEnd,
-
-      year: record.year,
-
-      price: record.weeklyAveragePrice,
-    }));
-
     // --------------------------------------------------------
     // RESPONSE
     // --------------------------------------------------------
@@ -251,13 +263,22 @@ router.get("/history", async (req, res) => {
 
       unit: records[0].unit,
 
+      currency: records[0].currency,
+
       count: records.length,
 
       firstDate: records[0].weekStart,
 
       latestDate: records[records.length - 1].weekStart,
 
-      history,
+      history: records.map((record) => ({
+        weekStart: record.weekStart,
+        weekEnd: record.weekEnd,
+        year: record.year,
+        price: record.price,
+        dataQualityFlag: record.dataQualityFlag,
+        sourceFile: record.sourceFile,
+      })),
     });
   } catch (error) {
     console.error("Price history error:", error);
