@@ -1,0 +1,64 @@
+{
+  "max_depth": null,
+  "min_samples_leaf": 1,
+  "seed": 42,
+  "valid_macro_f1": 0.7734,
+  "test_accuracy": 0.7976,
+  "test_macro_f1": 0.7722,
+  "confusion_matrix": [
+    [
+      232,
+      53,
+      14
+    ],
+    [
+      53,
+      312,
+      9
+    ],
+    [
+      8,
+      15,
+      55
+    ]
+  ],
+  "labels": [
+    "Unripe",
+    "Ripe",
+    "Overripe"
+  ],
+  "per_fruit": {
+    "Apple": {
+      "n": 64,
+      "accuracy": 0.781
+    },
+    "Banana": {
+      "n": 265,
+      "accuracy": 0.891
+    },
+    "Grape": {
+      "n": 229,
+      "accuracy": 0.773
+    },
+    "Mango": {
+      "n": 45,
+      "accuracy": 0.622
+    },
+    "Melon": {
+      "n": 69,
+      "accuracy": 0.783
+    },
+    "Orange": {
+      "n": 30,
+      "accuracy": 0.667
+    },
+    "Peach": {
+      "n": 28,
+      "accuracy": 0.857
+    },
+    "Pear": {
+      "n": 21,
+      "accuracy": 0.476
+    }
+  }
+}
