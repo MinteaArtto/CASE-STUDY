@@ -103,12 +103,6 @@ export default function Header() {
               {label}
             </button>
           ))}
-          <Link
-            to="/about"
-            className="header-about-link bg-ink text-cream-light text-sm font-medium px-5 py-2 rounded-full hover:bg-ink/90 transition-colors"
-          >
-            About
-          </Link>
           <button
             type="button"
             aria-label={isLoggedIn ? "Open user profile" : "Sign up or log in"}

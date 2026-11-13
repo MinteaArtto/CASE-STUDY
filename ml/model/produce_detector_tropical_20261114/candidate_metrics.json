@@ -1,0 +1,337 @@
+{
+  "model": "YOLO11n detector candidate",
+  "epochs": 5,
+  "dataset": "C:\\Users\\Administrator\\Downloads\\CASE-STUDY\\ml\\.training-cache\\detector_tropical_20261114",
+  "classes": {
+    "0": "apple",
+    "1": "atemoya",
+    "2": "atis",
+    "3": "avocado",
+    "4": "balimbing",
+    "5": "banana",
+    "6": "banana_blossom",
+    "7": "bottle_gourd",
+    "8": "buko",
+    "9": "caimito",
+    "10": "calamansi",
+    "11": "canistel",
+    "12": "chayote",
+    "13": "cherry",
+    "14": "chico",
+    "15": "cucumber",
+    "16": "dragon_fruit",
+    "17": "durian",
+    "18": "eggplant",
+    "19": "guava",
+    "20": "guava_red",
+    "21": "guyabano",
+    "22": "jackfruit",
+    "23": "kiwi",
+    "24": "lansones",
+    "25": "lemon",
+    "26": "lychee",
+    "27": "mango",
+    "28": "mangosteen",
+    "29": "marang",
+    "30": "melon",
+    "31": "okra",
+    "32": "orange",
+    "33": "papaya",
+    "34": "peach",
+    "35": "pear",
+    "36": "pineapple",
+    "37": "pomelo",
+    "38": "rambutan",
+    "39": "rose_apple",
+    "40": "sampalok",
+    "41": "santol",
+    "42": "siniguelas",
+    "43": "strawberry",
+    "44": "sugar_apple",
+    "45": "tamarind",
+    "46": "tomato",
+    "47": "watermelon"
+  },
+  "images_per_split": {
+    "train": 2989,
+    "val": 298,
+    "test": 240
+  },
+  "sources": [
+    "BahayKubounty_Fruits.v1i.yolov8.zip",
+    "Fruit Recognition.v1i.yolov8.zip",
+    "fruits and veg 2.v2-yolov5-32-classes.yolov8.zip",
+    "Fruits and Vegetables.v1i.yolov8.zip",
+    "Rambutan.v2i.yolov8.zip",
+    "Tropical Fruits Detection.v1-tropical-fruits-detection.yolov8.zip"
+  ],
+  "sampling_limits_per_class": {
+    "train": 100,
+    "val": 10,
+    "test": 10
+  },
+  "test_metrics": {
+    "metrics/precision(B)": 0.6574906460670369,
+    "metrics/recall(B)": 0.37776389372694225,
+    "metrics/mAP50(B)": 0.42414663450538725,
+    "metrics/mAP50-95(B)": 0.3055957555202696,
+    "fitness": 0.3055957555202696
+  },
+  "test_class_metrics": {
+    "apple": {
+      "precision": 0.44597556292897694,
+      "recall": 0.7142857142857143,
+      "map50": 0.6916666666666667,
+      "map50_95": 0.6261249999999999
+    },
+    "atemoya": {
+      "precision": 0.26963188648057085,
+      "recall": 0.4117647058823529,
+      "map50": 0.2546426960477022,
+      "map50_95": 0.18917098863612475
+    },
+    "atis": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.01655518394648829,
+      "map50_95": 0.014077480490523969
+    },
+    "avocado": {
+      "precision": 0.8699093441268707,
+      "recall": 0.42105263157894735,
+      "map50": 0.6071953465413548,
+      "map50_95": 0.4403052842089535
+    },
+    "balimbing": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.0024074074074074076,
+      "map50_95": 0.0012037037037037038
+    },
+    "banana": {
+      "precision": 0.6927800441326496,
+      "recall": 0.95,
+      "map50": 0.8783333333333333,
+      "map50_95": 0.6471659755449231
+    },
+    "banana_blossom": {
+      "precision": 0.3804467579269464,
+      "recall": 0.2727272727272727,
+      "map50": 0.3556950345103851,
+      "map50_95": 0.12361105996335948
+    },
+    "bottle_gourd": {
+      "precision": 0.33915132012567484,
+      "recall": 0.1,
+      "map50": 0.2476506861529233,
+      "map50_95": 0.10986505495129015
+    },
+    "buko": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.004901477832512316,
+      "map50_95": 0.0022217459886479706
+    },
+    "caimito": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.05254554655870445,
+      "map50_95": 0.028904352226720643
+    },
+    "calamansi": {
+      "precision": 0.5808075927544104,
+      "recall": 0.6933320448716435,
+      "map50": 0.8360714285714286,
+      "map50_95": 0.45628971813095376
+    },
+    "canistel": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.1983328503815319,
+      "map50_95": 0.16196254105090313
+    },
+    "chayote": {
+      "precision": 1.0,
+      "recall": 0.5490451417883057,
+      "map50": 0.8260334713595585,
+      "map50_95": 0.5276061170713346
+    },
+    "cherry": {
+      "precision": 0.6920881138342893,
+      "recall": 0.3870967741935484,
+      "map50": 0.5182120901099614,
+      "map50_95": 0.27325826391776425
+    },
+    "chico": {
+      "precision": 0.2509081321165266,
+      "recall": 0.23076923076923078,
+      "map50": 0.1974206751060408,
+      "map50_95": 0.12668563979919176
+    },
+    "cucumber": {
+      "precision": 0.26313393895482057,
+      "recall": 0.125,
+      "map50": 0.12331590632080033,
+      "map50_95": 0.029102969780644545
+    },
+    "dragon_fruit": {
+      "precision": 1.0,
+      "recall": 0.5963543665996254,
+      "map50": 0.7015786065786066,
+      "map50_95": 0.3394436118284666
+    },
+    "durian": {
+      "precision": 0.7745156385023204,
+      "recall": 0.6363636363636364,
+      "map50": 0.7164030100334449,
+      "map50_95": 0.5147492196209588
+    },
+    "eggplant": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "map50": 0.01818690805433644,
+      "map50_95": 0.006387877776292952
+    },
+    "guava": {
+      "precision": 0.603411810675285,
+      "recall": 0.9230769230769231,
+      "map50": 0.8395177423195997,
+      "map50_95": 0.7244886473820297
+    },
+    "guava_red": {
+      "precision": 1.0,
+      "recall": 0.7592769405136414,
+      "map50": 0.9438235294117646,
+      "map50_95": 0.7191386554621848
+    },
+    "lansones": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.0,
+      "map50_95": 0.0
+    },
+    "lychee": {
+      "precision": 0.6023642822634087,
+      "recall": 0.6162805600876241,
+      "map50": 0.6493444632614979,
+      "map50_95": 0.5471599358040998
+    },
+    "mango": {
+      "precision": 0.4799300878503435,
+      "recall": 0.4166666666666667,
+      "map50": 0.4231730769230769,
+      "map50_95": 0.3760384615384615
+    },
+    "mangosteen": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "map50": 0.01817221067221067,
+      "map50_95": 0.014523897346477993
+    },
+    "melon": {
+      "precision": 0.7507415327522309,
+      "recall": 0.5714285714285714,
+      "map50": 0.6614986536293813,
+      "map50_95": 0.5019843751043686
+    },
+    "okra": {
+      "precision": 0.28146627877703545,
+      "recall": 0.09090909090909091,
+      "map50": 0.10094871589940323,
+      "map50_95": 0.04206549474156727
+    },
+    "orange": {
+      "precision": 0.8265808995173879,
+      "recall": 1.0,
+      "map50": 0.995,
+      "map50_95": 0.855409090909091
+    },
+    "papaya": {
+      "precision": 0.831011782080969,
+      "recall": 0.05405405405405406,
+      "map50": 0.25105168136523276,
+      "map50_95": 0.13903368537366556
+    },
+    "pear": {
+      "precision": 0.49361949437252256,
+      "recall": 1.0,
+      "map50": 0.6717857142857143,
+      "map50_95": 0.6045535714285715
+    },
+    "pineapple": {
+      "precision": 0.6394104981391627,
+      "recall": 0.6666666666666666,
+      "map50": 0.5695923509955132,
+      "map50_95": 0.44940448418511664
+    },
+    "pomelo": {
+      "precision": 0.9159725508025176,
+      "recall": 0.6666666666666666,
+      "map50": 0.863,
+      "map50_95": 0.7438
+    },
+    "rambutan": {
+      "precision": 0.4738480944945585,
+      "recall": 0.47058823529411764,
+      "map50": 0.42271405679737656,
+      "map50_95": 0.1742801444461051
+    },
+    "rose_apple": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.26475,
+      "map50_95": 0.1649
+    },
+    "santol": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.04555759643138284,
+      "map50_95": 0.03811834164261349
+    },
+    "siniguelas": {
+      "precision": 1.0,
+      "recall": 0.0,
+      "map50": 0.008474317307816809,
+      "map50_95": 0.007444130271523093
+    },
+    "strawberry": {
+      "precision": 0.7240055493440258,
+      "recall": 0.65625,
+      "map50": 0.7988149000894459,
+      "map50_95": 0.6313945571625897
+    },
+    "sugar_apple": {
+      "precision": 0.5931193500202888,
+      "recall": 1.0,
+      "map50": 0.9505555555555554,
+      "map50_95": 0.7279960317460316
+    },
+    "tamarind": {
+      "precision": 0.5666900201855589,
+      "recall": 0.3684210526315789,
+      "map50": 0.4172692861715749,
+      "map50_95": 0.26094329883687506
+    },
+    "tomato": {
+      "precision": 0.32598470636287863,
+      "recall": 0.125,
+      "map50": 0.07234035117634482,
+      "map50_95": 0.04511063553616708
+    },
+    "watermelon": {
+      "precision": 0.28961121922628313,
+      "recall": 0.01524269574875174,
+      "map50": 0.1754794869147983,
+      "map50_95": 0.1435019327227549
+    }
+  },
+  "classes_absent_from_test": [
+    "guyabano",
+    "jackfruit",
+    "kiwi",
+    "lemon",
+    "marang",
+    "peach",
+    "sampalok"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "model": "YOLO11n classification",
+  "epochs": 5,
+  "train_images_per_stage": 300,
+  "validation_images_per_stage": 40,
+  "test_images_per_stage": 40,
+  "test_samples": 120,
+  "test_accuracy": 0.9417,
+  "test_top5_accuracy": 1.0,
+  "classes": [
+    "Overripe",
+    "Ripe",
+    "Unripe"
+  ],
+  "per_fruit_test_accuracy": {
+    "Banana": {
+      "n": 35,
+      "accuracy": 1.0
+    },
+    "Mango": {
+      "n": 7,
+      "accuracy": 1.0
+    },
+    "Papaya": {
+      "n": 15,
+      "accuracy": 1.0
+    },
+    "Pineapple": {
+      "n": 35,
+      "accuracy": 0.8
+    },
+    "Rambutan": {
+      "n": 14,
+      "accuracy": 1.0
+    },
+    "Strawberry": {
+      "n": 14,
+      "accuracy": 1.0
+    }
+  },
+  "not_tested": [
+    "Avocado"
+  ],
+  "overripe_test_fruits": [
+    "Banana",
+    "Pineapple"
+  ]
+}

@@ -30,6 +30,7 @@ Thumbs.db
 
 # Virtual environment
 ml/.venv/
+ml/.training-cache/
 
 
 # ==========================================

@@ -1,0 +1,127 @@
+{
+  "model": "YOLO11n classification",
+  "epochs": 5,
+  "classes": [
+    "Overripe",
+    "Ripe",
+    "Semi-ripe",
+    "Turning",
+    "Unripe"
+  ],
+  "test": {
+    "samples": 280,
+    "top1_accuracy": 0.8643,
+    "per_stage": {
+      "Overripe": {
+        "correct": 54,
+        "samples": 60,
+        "accuracy": 0.9
+      },
+      "Ripe": {
+        "correct": 84,
+        "samples": 100,
+        "accuracy": 0.84
+      },
+      "Turning": {
+        "correct": 13,
+        "samples": 20,
+        "accuracy": 0.65
+      },
+      "Unripe": {
+        "correct": 91,
+        "samples": 100,
+        "accuracy": 0.91
+      }
+    },
+    "confusion": {
+      "Overripe": {
+        "Overripe": 54,
+        "Ripe": 5,
+        "Unripe": 1
+      },
+      "Ripe": {
+        "Overripe": 9,
+        "Ripe": 84,
+        "Semi-ripe": 5,
+        "Unripe": 2
+      },
+      "Turning": {
+        "Semi-ripe": 6,
+        "Turning": 13,
+        "Unripe": 1
+      },
+      "Unripe": {
+        "Overripe": 1,
+        "Ripe": 4,
+        "Turning": 4,
+        "Unripe": 91
+      }
+    }
+  },
+  "new_fruit_test": {
+    "samples": 160,
+    "per_fruit": {
+      "avocado": {
+        "correct": 46,
+        "samples": 60,
+        "accuracy": 0.7667
+      },
+      "dragon_fruit": {
+        "correct": 40,
+        "samples": 40,
+        "accuracy": 1.0
+      },
+      "tomato": {
+        "correct": 45,
+        "samples": 60,
+        "accuracy": 0.75
+      }
+    },
+    "per_fruit_stage": {
+      "avocado/Overripe": {
+        "correct": 18,
+        "samples": 20,
+        "accuracy": 0.9
+      },
+      "avocado/Ripe": {
+        "correct": 10,
+        "samples": 20,
+        "accuracy": 0.5
+      },
+      "avocado/Unripe": {
+        "correct": 18,
+        "samples": 20,
+        "accuracy": 0.9
+      },
+      "dragon_fruit/Ripe": {
+        "correct": 20,
+        "samples": 20,
+        "accuracy": 1.0
+      },
+      "dragon_fruit/Unripe": {
+        "correct": 20,
+        "samples": 20,
+        "accuracy": 1.0
+      },
+      "tomato/Ripe": {
+        "correct": 14,
+        "samples": 20,
+        "accuracy": 0.7
+      },
+      "tomato/Turning": {
+        "correct": 13,
+        "samples": 20,
+        "accuracy": 0.65
+      },
+      "tomato/Unripe": {
+        "correct": 18,
+        "samples": 20,
+        "accuracy": 0.9
+      }
+    }
+  },
+  "limitations": [
+    "Semi-ripe has validation and training samples but no held-out test samples.",
+    "Candidate is not connected to the active application model."
+  ]
+}

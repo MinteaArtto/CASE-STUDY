@@ -1,0 +1,442 @@
+{
+  "apple": {
+    "recipes": [
+      {
+        "title": "Acorn Squash Stuffed with Apple, Cranberry, and Sausage",
+        "category": "Winter Squash",
+        "ingredient": "1 apple, cubed"
+      },
+      {
+        "title": "Acorn Squash with Apple",
+        "category": "New Year'S",
+        "ingredient": "2 apples, cored and sliced"
+      },
+      {
+        "title": "Air Fryer Apple Crisp",
+        "category": "Cobblers",
+        "ingredient": "2 cups diced apples"
+      },
+      {
+        "title": "Air Fryer Apple Crisp with Oatmeal Streusel",
+        "category": "Cobblers",
+        "ingredient": "2 ½ cups peeled, cored, and diced apples"
+      },
+      {
+        "title": "Air Fryer Apple Crumble",
+        "category": "Cobblers",
+        "ingredient": "2 ½ cups peeled, cored, and diced apples"
+      }
+    ],
+    "overripe": []
+  },
+  "banana": {
+    "recipes": [
+      {
+        "title": "2-Ingredient Wheat-Free Banana Pancakes (Paleo)",
+        "category": "Gluten-Free",
+        "ingredient": "1 large banana, broken into chunks"
+      },
+      {
+        "title": "3-Ingredient Banana Oatmeal Cookies",
+        "category": "Cookies",
+        "ingredient": "3/4 cup mashed banana"
+      },
+      {
+        "title": "4-Ingredient Banana Bread",
+        "category": "Breads",
+        "ingredient": "5 small ripe spotted bananas, divided (about 4 1/2 ounces each)"
+      },
+      {
+        "title": "4H Banana Bread",
+        "category": "Banana Breads",
+        "ingredient": "1 cup mashed bananas"
+      },
+      {
+        "title": "A-Number-1 Banana Cake",
+        "category": "Banana Breads",
+        "ingredient": "4 ripe bananas, mashed"
+      }
+    ],
+    "overripe": [
+      {
+        "title": "Banana Banana Bread",
+        "category": "Banana Breads",
+        "ingredient": "2 ⅓ cups mashed overripe bananas"
+      },
+      {
+        "title": "Banana Bread Baked Oatmeal Bars",
+        "category": "Bar Cookies",
+        "ingredient": "1 over-ripe banana, mashed"
+      },
+      {
+        "title": "Banana Bread Mug Cake in a Minute",
+        "category": "Banana Breads",
+        "ingredient": "1 medium very ripe banana"
+      },
+      {
+        "title": "Browned Butter Banana Bread",
+        "category": "Banana Breads",
+        "ingredient": "3 very ripe bananas"
+      },
+      {
+        "title": "Chocolate Chip Banana Bread",
+        "category": "Banana Breads",
+        "ingredient": "6 very ripe bananas, mashed"
+      }
+    ]
+  },
+  "carrot": {
+    "recipes": [
+      {
+        "title": "A Plus Carrot Cake",
+        "category": "Cakes",
+        "ingredient": "2 cups grated carrots"
+      },
+      {
+        "title": "A Very Moist Carrot Cake",
+        "category": "Cakes",
+        "ingredient": "2 cups grated carrots"
+      },
+      {
+        "title": "Allergen-Free Raisin-Carrot Muffins",
+        "category": "Lunch",
+        "ingredient": "1 cup finely shredded carrots"
+      },
+      {
+        "title": "Ann's Chocolate Chip Carrot Cake Pumpkins",
+        "category": "Halloween",
+        "ingredient": "2 cups grated carrots"
+      },
+      {
+        "title": "Apple Carrot Muffins",
+        "category": "Muffins",
+        "ingredient": "¾ cup grated carrot"
+      }
+    ],
+    "overripe": []
+  },
+  "grape": {
+    "recipes": [
+      {
+        "title": "Grape and Avocado Salsa",
+        "category": "July 4Th",
+        "ingredient": "1 ½ cups seedless red grapes, chopped"
+      },
+      {
+        "title": "Italian Fresh Purple Grape Cake",
+        "category": "Italian",
+        "ingredient": "10 ounces small purple grapes, divided"
+      },
+      {
+        "title": "\"Spa\"ctacular Frozen Grapes",
+        "category": "Appetizers And Snacks",
+        "ingredient": "1 cup seedless green grapes"
+      },
+      {
+        "title": "Apple-Grape Salad with Pecan-Crusted Goat Cheese",
+        "category": "Fruit Salads",
+        "ingredient": "1 pound seedless red grapes"
+      },
+      {
+        "title": "Arugula and Romaine Salad with Red Grapes",
+        "category": "Green Salads",
+        "ingredient": "½ cup red seedless grapes, halved"
+      }
+    ],
+    "overripe": []
+  },
+  "mango": {
+    "recipes": [
+      {
+        "title": "Acai Mango Smoothie Bowl",
+        "category": "Breakfast And Brunch",
+        "ingredient": "1 cup diced mango"
+      },
+      {
+        "title": "Avocado Mango Salsa",
+        "category": "Appetizers And Snacks",
+        "ingredient": "1 mango - peeled, seeded and diced"
+      },
+      {
+        "title": "Avocado, Tomato and Mango Salsa",
+        "category": "Kosher",
+        "ingredient": "1 mango, peeled, seeded, and diced"
+      },
+      {
+        "title": "Banana Mango Muffins with Lime Glaze",
+        "category": "Banana Breads",
+        "ingredient": "1 ripe mango, peeled and pitted"
+      },
+      {
+        "title": "Berry-Mango Shaved Ice",
+        "category": "Desserts",
+        "ingredient": "1/3 cup chopped fresh mango"
+      }
+    ],
+    "overripe": []
+  },
+  "melon": {
+    "recipes": [
+      {
+        "title": "Melon Smoothie",
+        "category": "Breakfast And Brunch",
+        "ingredient": "¼ honeydew melon - peeled, seeded and cubed"
+      },
+      {
+        "title": "Mushroom, Shrimp, and Winter Melon Soup",
+        "category": "Mushroom Soups",
+        "ingredient": "1 (10 ounce) peeled winter melon, cut into 1/4-inch pieces"
+      },
+      {
+        "title": "Refreshing Melon Salad",
+        "category": "Fruit Salads",
+        "ingredient": "¼ medium galia melon cantaloupe, cubed"
+      },
+      {
+        "title": "Melon and Prosciutto Salad",
+        "category": "Allrecipes Allstar Recipes",
+        "ingredient": "1/2 honeydew melon"
+      },
+      {
+        "title": "Melon Salad with Feta",
+        "category": "Allrecipes Allstar Recipes",
+        "ingredient": "1 cup honeydew melon"
+      }
+    ],
+    "overripe": []
+  },
+  "orange": {
+    "recipes": [
+      {
+        "title": "Beat and Bake Orange Cake",
+        "category": "Cakes",
+        "ingredient": "1 ½ teaspoons grated orange zest"
+      },
+      {
+        "title": "Beet, Orange, and Apple Salad",
+        "category": "Easter",
+        "ingredient": "1 large orange, peeled and sectioned"
+      },
+      {
+        "title": "Blood Orange Marmalade",
+        "category": "Canning And Preserving",
+        "ingredient": "5 large blood oranges"
+      },
+      {
+        "title": "Blood Orange, Blueberry, and Feta Salad",
+        "category": "Green Salads",
+        "ingredient": "2 blood oranges, peeled and sliced"
+      },
+      {
+        "title": "Boozy Fresh Cranberry-Orange Sauce",
+        "category": "Cranberry Sauces",
+        "ingredient": "½ large orange, zested and juiced"
+      }
+    ],
+    "overripe": []
+  },
+  "peach": {
+    "recipes": [
+      {
+        "title": "4-Ingredient Slow Cooker Peach Cobbler",
+        "category": "Cobblers",
+        "ingredient": "8 cups sliced fresh or frozen peaches, thawed"
+      },
+      {
+        "title": "Air Fryer Grilled Peaches",
+        "category": "Cakes",
+        "ingredient": "3 medium peaches, halved and pitted"
+      },
+      {
+        "title": "Air Fryer Grilled Peaches with Cinnamon",
+        "category": "Crisps And Crumbles",
+        "ingredient": "1 medium firm peach, halved and pitted"
+      },
+      {
+        "title": "Avon's End of Summer Sunday Morning Peach Coffee Cake",
+        "category": "Cakes",
+        "ingredient": "1 cup chopped ripe peaches"
+      },
+      {
+        "title": "Baked Chicken with Peaches",
+        "category": "Low Fat",
+        "ingredient": "4 fresh peaches - peeled, pitted, and sliced"
+      }
+    ],
+    "overripe": []
+  },
+  "pear": {
+    "recipes": [
+      {
+        "title": "Apple and Pear Crumble",
+        "category": "Cobblers",
+        "ingredient": "2 cups peeled and diced pears"
+      },
+      {
+        "title": "Apple and Pear Soup",
+        "category": "High Fiber",
+        "ingredient": "3 pears - peeled, cored, and chopped"
+      },
+      {
+        "title": "Apple, Cranberry, and Pear Crisp",
+        "category": "Crisps And Crumbles",
+        "ingredient": "2 medium Comice pears - peeled, cored, and cubed"
+      },
+      {
+        "title": "Apple-Pear Sauce",
+        "category": "Applesauce",
+        "ingredient": "4 Asian pears - peeled, cored, and cut into cubes"
+      },
+      {
+        "title": "Autumn Apple Pear Chutney",
+        "category": "Canning And Preserving",
+        "ingredient": "1 ½ pounds pears - peeled, cored, and diced"
+      }
+    ],
+    "overripe": []
+  },
+  "kangkong": {
+    "recipes": [
+      {
+        "title": "Sinigang na Bangus (Filipino Milkfish in Tamarind Broth)",
+        "category": "High Fiber",
+        "ingredient": "1 cup watercress (kangkong) leaves and stems"
+      }
+    ],
+    "overripe": []
+  },
+  "okra": {
+    "recipes": [
+      {
+        "title": "Air Fryer Okra \"Fries\"",
+        "category": "Air Fryer Recipes",
+        "ingredient": "1 pound fresh okra, about 3-inches long"
+      },
+      {
+        "title": "Air Fryer Roasted Okra",
+        "category": "Air Fryer Recipes",
+        "ingredient": "½ pound okra, ends trimmed and pods sliced"
+      },
+      {
+        "title": "Bamieh (Middle Eastern Okra Stew)",
+        "category": "Lamb",
+        "ingredient": "2 pounds frozen sliced okra"
+      },
+      {
+        "title": "Crispy Indian Okra",
+        "category": "Indian",
+        "ingredient": "2 ½ cups fresh okra, ends trimmed"
+      },
+      {
+        "title": "Easy Indian-Style Okra",
+        "category": "Indian",
+        "ingredient": "1 pound sliced fresh okra"
+      }
+    ],
+    "overripe": []
+  },
+  "repolyo": {
+    "recipes": [
+      {
+        "title": "Angie's Dad's Best Cabbage Coleslaw",
+        "category": "Coleslaws",
+        "ingredient": "1 medium head cabbage, shredded"
+      },
+      {
+        "title": "Asian Cabbage Salad",
+        "category": "Coleslaws",
+        "ingredient": "4 cups shredded cabbage"
+      },
+      {
+        "title": "Atchara (Filipino Pickled Red Cabbage)",
+        "category": "Canning And Preserving",
+        "ingredient": "1 pound red cabbage, finely shredded"
+      },
+      {
+        "title": "Beef and Cabbage Stew",
+        "category": "Beef Recipes",
+        "ingredient": "4 cups shredded cabbage"
+      },
+      {
+        "title": "Best Stuffed Cabbage Rolls",
+        "category": "Cabbage Rolls",
+        "ingredient": "1 large head cabbage"
+      }
+    ],
+    "overripe": []
+  },
+  "sayote": {
+    "recipes": [
+      {
+        "title": "Chayote Squash Side Dish",
+        "category": "Low Calorie",
+        "ingredient": "1 chayote squash, cut into 1/2-inch strips"
+      },
+      {
+        "title": "Beef Nilaga",
+        "category": "Beef Recipes",
+        "ingredient": "1 chayote squash, peeled and quartered"
+      },
+      {
+        "title": "Caldo de Pollo",
+        "category": "Comfort Food",
+        "ingredient": "1 chayote, cut into large chunks"
+      },
+      {
+        "title": "Chicken Tinola",
+        "category": "Comfort Food",
+        "ingredient": "1 chayote squash, peeled and cut into bite-sized pieces"
+      },
+      {
+        "title": "Mexican Chicken Meatball Soup (Sopa de Albóndigas de Pollo)",
+        "category": "Ground Chicken",
+        "ingredient": "2 chayote squash - peeled, cored, and cubed"
+      }
+    ],
+    "overripe": []
+  },
+  "sitaw": {
+    "recipes": [],
+    "overripe": []
+  },
+  "talong": {
+    "recipes": [
+      {
+        "title": "Air Fryer Eggplant Parmesan",
+        "category": "Appetizers And Snacks",
+        "ingredient": "1 medium eggplant, sliced into 1/2-inch rounds"
+      },
+      {
+        "title": "Air Fryer Eggplant Parmesan Mini Pizzas",
+        "category": "Eggplant Parmesan",
+        "ingredient": "1 medium eggplant, sliced into 1/2- inch rounds"
+      },
+      {
+        "title": "Baked \"Fried\" Breaded Eggplant",
+        "category": "Main Dishes",
+        "ingredient": "1 eggplant, peeled and sliced into 1/4-inch rounds"
+      },
+      {
+        "title": "Baked Eggplant",
+        "category": "Low Sodium",
+        "ingredient": "1 eggplant, sliced into ½-inch-thick rounds"
+      },
+      {
+        "title": "Baked Eggplant Parmesan",
+        "category": "Main Dishes",
+        "ingredient": "2 eggplants, peeled and cut into ½-inch slices"
+      }
+    ],
+    "overripe": []
+  },
+  "upo": {
+    "recipes": [
+      {
+        "title": "Opo Squash Wonder Soup",
+        "category": "Pork",
+        "ingredient": "4 cups peeled, seeded, and diced opo squash"
+      }
+    ],
+    "overripe": []
+  }
+}

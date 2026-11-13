@@ -1,0 +1,56 @@
+{
+  "max_depth": 12,
+  "min_samples_leaf": 1,
+  "seed": 42,
+  "valid_macro_f1": 0.7453,
+  "test_accuracy": 0.7193,
+  "test_macro_f1": 0.7136,
+  "confusion_matrix": [
+    [
+      146,
+      34,
+      7
+    ],
+    [
+      39,
+      104,
+      14
+    ],
+    [
+      11,
+      14,
+      55
+    ]
+  ],
+  "labels": [
+    "Unripe",
+    "Ripe",
+    "Overripe"
+  ],
+  "per_fruit": {
+    "Banana": {
+      "n": 120,
+      "accuracy": 0.867
+    },
+    "Mango": {
+      "n": 40,
+      "accuracy": 0.925
+    },
+    "Papaya": {
+      "n": 42,
+      "accuracy": 0.905
+    },
+    "Pineapple": {
+      "n": 120,
+      "accuracy": 0.475
+    },
+    "Rambutan": {
+      "n": 40,
+      "accuracy": 0.725
+    },
+    "Strawberry": {
+      "n": 62,
+      "accuracy": 0.645
+    }
+  }
+}
