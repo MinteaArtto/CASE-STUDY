@@ -7,7 +7,7 @@ import UserLogIn from "./UserLogIn";
 import UserSignUp from "./UserSignUp";
 import UserForgotPassword from "./UserForgotPassword";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 function formatPrice(value) {
   const number = Number(value);

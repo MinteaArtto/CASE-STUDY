@@ -1,0 +1,13 @@
+.git
+.env
+**/.env
+**/node_modules
+**/dist
+**/.venv
+ml/.training-cache
+ml/dataset
+ml/datasets
+backend/uploads
+price_data/archive
+price_data/pdfs
+price_data/debug_price_crops

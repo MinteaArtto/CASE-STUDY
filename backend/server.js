@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require("path");
 const spoilageRoutes = require("./routes/spoilageRoutes");
 const priceRoutes = require("./routes/priceRoutes");
 
@@ -17,14 +18,22 @@ app.use(express.json());
 app.use("/api/spoilage", spoilageRoutes);
 app.use("/api/prices", priceRoutes);
 
-// Test route - just to check server is running
-app.get("/", (req, res) => {
+const healthResponse = (req, res) => {
   res.json({
     message: "Server is running!",
     status: "Online",
     mongodb:
       mongoose.connection.readyState === 1 ? "Connected" : "Not connected",
   });
+};
+app.get("/api/health", healthResponse);
+
+const frontendDist = path.join(__dirname, "..", "frontend", "dist");
+app.use(express.static(frontendDist));
+app.get("/", healthResponse);
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api/")) return next();
+  return res.sendFile(path.join(frontendDist, "index.html"));
 });
 
 // MongoDB Connection Test

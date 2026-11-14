@@ -17,9 +17,10 @@ const PREDICT_SCRIPT = path.join(PROJECT_ROOT, "ml", "predict_price.py");
 
 // Use the Python inside your ml virtual environment.
 const PYTHON_PATH =
-  process.platform === "win32"
+  process.env.PYTHON ||
+  (process.platform === "win32"
     ? path.join(PROJECT_ROOT, "ml", ".venv", "Scripts", "python.exe")
-    : path.join(PROJECT_ROOT, "ml", ".venv", "bin", "python");
+    : path.join(PROJECT_ROOT, "ml", ".venv", "bin", "python"));
 
 // ============================================================
 // RUN PYTHON SCRIPT

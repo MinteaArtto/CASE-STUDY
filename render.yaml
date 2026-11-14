@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: case-study
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ATLAS_URI
+        sync: false

@@ -6,6 +6,12 @@ const { spawn } = require("child_process");
 
 const router = express.Router();
 const uploadDir = path.join(__dirname, "..", "uploads");
+const PROJECT_ROOT = path.join(__dirname, "..", "..");
+const PYTHON_PATH =
+  process.env.PYTHON ||
+  (process.platform === "win32"
+    ? path.join(PROJECT_ROOT, "ml", ".venv", "Scripts", "python.exe")
+    : path.join(PROJECT_ROOT, "ml", ".venv", "bin", "python"));
 
 fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -31,15 +37,6 @@ function parsePipelineOutput(output) {
 }
 
 function runPipeline(imagePath) {
-  const pythonPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "ml",
-    ".venv",
-    "Scripts",
-    "python.exe",
-  );
   const scriptPath = path.join(
     __dirname,
     "..",
@@ -49,7 +46,7 @@ function runPipeline(imagePath) {
   );
 
   return new Promise((resolve, reject) => {
-    const process = spawn(pythonPath, [scriptPath, imagePath], {
+    const process = spawn(PYTHON_PATH, [scriptPath, imagePath], {
       windowsHide: true,
     });
     let stdout = "";

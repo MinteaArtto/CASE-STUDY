@@ -6,7 +6,7 @@ import recipeIndex from "../data/recipeIndex.json";
 // Classifier page: upload an image, then press Analyze to call the backend.
 
 export default function Classifier() {
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_BASE = import.meta.env.VITE_API_URL || "";
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewSrc, setPreviewSrc] = useState(null);
   const [loading, setLoading] = useState(false);
