@@ -55,22 +55,25 @@ app.get("/api/test-connection", async (req, res) => {
   }
 });
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.ATLAS_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("MongoDB Connected!");
-    console.log("Database: " + mongoose.connection.db.databaseName);
-  })
-  .catch((err) => {
-    console.error("MongoDB Connection Error:", err.message);
-  });
+async function startServer() {
+  const mongoUri = process.env.ATLAS_URI || process.env.MONGODB_URI;
+  if (!mongoUri) {
+    throw new Error(
+      "MongoDB URI is missing. Set ATLAS_URI in Render's environment variables.",
+    );
+  }
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-  console.log(`Test connection: http://localhost:${port}/api/test-connection`);
+  await mongoose.connect(mongoUri);
+  console.log("MongoDB Connected!");
+  console.log("Database: " + mongoose.connection.db.databaseName);
+
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+    console.log(`Test connection: /api/test-connection`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error("Application startup failed:", error.message);
+  process.exitCode = 1;
 });
