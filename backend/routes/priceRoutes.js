@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
 const csv = require("csv-parser");
+const runMlTask = require("../mlQueue");
 
 const router = express.Router();
 
@@ -27,42 +28,45 @@ const PYTHON_PATH =
 // ============================================================
 
 function runPython(args) {
-  return new Promise((resolve, reject) => {
-    const python = spawn(PYTHON_PATH, [PREDICT_SCRIPT, ...args], {
-      cwd: PROJECT_ROOT,
-    });
+  return runMlTask(
+    () =>
+      new Promise((resolve, reject) => {
+        const python = spawn(PYTHON_PATH, [PREDICT_SCRIPT, ...args], {
+          cwd: PROJECT_ROOT,
+        });
 
-    let stdout = "";
-    let stderr = "";
+        let stdout = "";
+        let stderr = "";
 
-    python.stdout.on("data", (data) => {
-      stdout += data.toString();
-    });
+        python.stdout.on("data", (data) => {
+          stdout += data.toString();
+        });
 
-    python.stderr.on("data", (data) => {
-      stderr += data.toString();
-    });
+        python.stderr.on("data", (data) => {
+          stderr += data.toString();
+        });
 
-    python.on("error", (error) => {
-      reject(new Error(`Failed to start Python process: ${error.message}`));
-    });
+        python.on("error", (error) => {
+          reject(new Error(`Failed to start Python process: ${error.message}`));
+        });
 
-    python.on("close", (code) => {
-      if (code !== 0) {
-        return reject(
-          new Error(stderr.trim() || `Python exited with code ${code}`),
-        );
-      }
+        python.on("close", (code) => {
+          if (code !== 0) {
+            return reject(
+              new Error(stderr.trim() || `Python exited with code ${code}`),
+            );
+          }
 
-      try {
-        const result = JSON.parse(stdout.trim());
+          try {
+            const result = JSON.parse(stdout.trim());
 
-        resolve(result);
-      } catch (error) {
-        reject(new Error(`Python returned invalid JSON: ${stdout}`));
-      }
-    });
-  });
+            resolve(result);
+          } catch (error) {
+            reject(new Error(`Python returned invalid JSON: ${stdout}`));
+          }
+        });
+      }),
+  );
 }
 
 function readPriceHistory(seriesKey) {

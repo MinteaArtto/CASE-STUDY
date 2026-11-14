@@ -179,8 +179,8 @@ export default function Classifier() {
             Identify produce and assess its condition
           </h1>
           <p className="mt-3 text-ink/70 max-w-2xl mx-auto">
-            Upload a clear image. The detector identifies fruit and vegetables,
-            then assesses freshness and supported fruit ripeness.
+            Upload a clear image. The detector identifies produce, checks for
+            illustrations, and assesses freshness and supported fruit ripeness.
           </p>
         </section>
 
@@ -479,8 +479,8 @@ function PriceSuggestionPanel({ detections, apiBase }) {
     <aside className="rounded-2xl bg-white p-5 shadow-sm border border-ink/5">
       <h3 className="text-lg font-semibold">Suggested produce prices</h3>
       <p className="mt-1 text-sm text-ink/60">
-        Suggestions use the 1-week DA price forecast and the detected ripeness.
-        Prices are estimates per listed unit.
+        Suggestions use the 1-week DA price forecast. Any discount requires a
+        supported ripeness result. Prices are estimates per listed unit.
       </p>
 
       {loading && (
@@ -899,6 +899,7 @@ function DetectionResult({ detection, index }) {
 }
 
 function detectorModelLabel(model) {
+  if (model === "starter") return "low-memory model";
   if (model === "tropical") return "48-class experimental candidate";
   if (model === "extended") return "35-class candidate";
   return "18-class model";

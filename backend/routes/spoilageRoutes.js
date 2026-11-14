@@ -3,6 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
+const runMlTask = require("../mlQueue");
 
 const router = express.Router();
 const uploadDir = path.join(__dirname, "..", "uploads");
@@ -42,47 +43,54 @@ function runPipeline(imagePath) {
     "..",
     "..",
     "ml",
-    "analyze_produce_pipeline.py",
+    process.env.ML_PROFILE === "starter"
+      ? "analyze_produce_starter.py"
+      : "analyze_produce_pipeline.py",
   );
 
-  return new Promise((resolve, reject) => {
-    const process = spawn(PYTHON_PATH, [scriptPath, imagePath], {
-      windowsHide: true,
-    });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
+  return runMlTask(
+    () =>
+      new Promise((resolve, reject) => {
+        const process = spawn(PYTHON_PATH, [scriptPath, imagePath], {
+          windowsHide: true,
+        });
+        let stdout = "";
+        let stderr = "";
+        let settled = false;
 
-    process.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    process.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    process.once("error", (error) => {
-      settled = true;
-      reject(new Error(`Could not start the ML pipeline: ${error.message}`));
-    });
-    process.once("close", (code) => {
-      if (settled) return;
-      settled = true;
+        process.stdout.on("data", (chunk) => {
+          stdout += chunk.toString();
+        });
+        process.stderr.on("data", (chunk) => {
+          stderr += chunk.toString();
+        });
+        process.once("error", (error) => {
+          settled = true;
+          reject(new Error(`Could not start the ML pipeline: ${error.message}`));
+        });
+        process.once("close", (code) => {
+          if (settled) return;
+          settled = true;
 
-      let result;
-      try {
-        result = parsePipelineOutput(stdout);
-      } catch (error) {
-        reject(new Error(stderr.trim() || error.message));
-        return;
-      }
+          let result;
+          try {
+            result = parsePipelineOutput(stdout);
+          } catch (error) {
+            reject(new Error(stderr.trim() || error.message));
+            return;
+          }
 
-      if (code !== 0 || result.success !== true) {
-        reject(new Error(result.message || stderr.trim() || "ML analysis failed."));
-        return;
-      }
+          if (code !== 0 || result.success !== true) {
+            reject(
+              new Error(result.message || stderr.trim() || "ML analysis failed."),
+            );
+            return;
+          }
 
-      resolve(result);
-    });
-  });
+          resolve(result);
+        });
+      }),
+  );
 }
 
 router.post("/analyze", upload.single("image"), async (req, res) => {

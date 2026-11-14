@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 from PIL import Image
 from torchvision import models, transforms
-from transformers import CLIPModel, CLIPProcessor
 
 
 # ============================================================
@@ -113,6 +112,7 @@ cnn_transform = transforms.Compose([
 # ============================================================
 
 def load_clip():
+    from transformers import CLIPModel, CLIPProcessor
 
     processor = (
         CLIPProcessor.from_pretrained(
@@ -252,8 +252,10 @@ def load_ood_detector():
     return data
 
 
-def load_pipeline_models():
-    clip_model, clip_processor = load_clip()
+def load_pipeline_models(include_clip=True):
+    clip_model, clip_processor = (
+        load_clip() if include_clip else (None, None)
+    )
     cnn_model = load_cnn()
 
     return {
@@ -557,6 +559,7 @@ def classify_spoilage(
 def analyze_image(
     image_path,
     pipeline_models=None,
+    skip_produce_validation=False,
 ):
 
     image_path = Path(
@@ -622,7 +625,13 @@ def analyze_image(
     # ========================================================
 
     produce_result = (
-        validate_produce(
+        {
+            "is_produce": True,
+            "produce_score": 1.0,
+            "non_produce_score": 0.0,
+        }
+        if skip_produce_validation
+        else validate_produce(
             image,
             clip_model,
             clip_processor,
