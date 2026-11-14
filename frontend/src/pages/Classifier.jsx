@@ -351,7 +351,13 @@ export default function Classifier() {
 
                         </div>
 
-                        <RecipeSupportPanel detections={result.detections} />
+                        <div className="space-y-4 lg:sticky lg:top-6">
+                          <PriceSuggestionPanel
+                            detections={result.detections}
+                            apiBase={API_BASE}
+                          />
+                          <RecipeSupportPanel detections={result.detections} />
+                        </div>
                       </div>
                     </>
                   )}
@@ -371,6 +377,339 @@ export default function Classifier() {
       <Footer />
     </div>
   );
+}
+
+function PriceSuggestionPanel({ detections, apiBase }) {
+  const [suggestions, setSuggestions] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSuggestions() {
+      const candidates = detections.flatMap((detection, detectionIndex) =>
+        candidatesForDetection(detection).map((candidate, candidateIndex) => ({
+          key: `${detectionIndex}-${candidateIndex}`,
+          candidate,
+        })),
+      );
+      setSuggestions({});
+      setError(null);
+      if (candidates.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const productsResponse = await fetch(`${apiBase}/api/prices/products`);
+        const productsData = await productsResponse.json();
+        if (
+          !productsResponse.ok ||
+          productsData.success !== true ||
+          !Array.isArray(productsData.products)
+        ) {
+          throw new Error(
+            productsData.message || "Could not load forecastable produce prices.",
+          );
+        }
+
+        const products = productsData.products.filter((product) =>
+          isFruitOrVegetableCategory(product.category),
+        );
+        const matchedCandidates = candidates.map(({ key, candidate }) => ({
+          key,
+          candidate,
+          product: findPriceProduct(candidate.produce?.label, products),
+        }));
+        const uniqueProducts = [
+          ...new Map(
+            matchedCandidates
+              .filter(({ product }) => product)
+              .map(({ product }) => [product.series_key, product]),
+          ).values(),
+        ];
+        const forecastEntries = [];
+        for (let index = 0; index < uniqueProducts.length; index += 3) {
+          const batch = uniqueProducts.slice(index, index + 3);
+          forecastEntries.push(
+            ...(await Promise.all(
+              batch.map((product) => fetchProductForecast(product, apiBase)),
+            )),
+          );
+        }
+        const forecastsBySeries = new Map(forecastEntries);
+        const nextSuggestions = Object.fromEntries(
+          candidates.map(({ key }) => {
+            const match = matchedCandidates.find((item) => item.key === key);
+            if (!match?.product) {
+              return [key, { unavailableReason: "No matching weekly price series was found." }];
+            }
+
+            return [key, forecastsBySeries.get(match.product.series_key)];
+          }),
+        );
+
+        if (!cancelled) setSuggestions(nextSuggestions);
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError.message || "Could not load price suggestions.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadSuggestions();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase, detections]);
+
+  const candidates = detections.flatMap((detection, detectionIndex) =>
+    candidatesForDetection(detection).map((candidate, candidateIndex) => ({
+      key: `${detectionIndex}-${candidateIndex}`,
+      itemNumber: detectionIndex + 1,
+      candidate,
+    })),
+  );
+
+  return (
+    <aside className="rounded-2xl bg-white p-5 shadow-sm border border-ink/5">
+      <h3 className="text-lg font-semibold">Suggested produce prices</h3>
+      <p className="mt-1 text-sm text-ink/60">
+        Suggestions use the 1-week DA price forecast and the detected ripeness.
+        Prices are estimates per listed unit.
+      </p>
+
+      {loading && (
+        <p role="status" className="mt-4 text-sm text-ink/60">
+          Loading weekly price suggestions...
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="mt-4 text-sm text-red-700">
+          Price suggestions unavailable: {error}
+        </p>
+      )}
+
+      <div className="mt-4 space-y-4">
+        {candidates.map(({ key, itemNumber, candidate }) => {
+          const suggestion = suggestions[key];
+          const canApplyDiscount = canSuggestPrice(candidate);
+          const discount = canApplyDiscount
+            ? discountForRipeness(candidate.ripeness?.label)
+            : null;
+          const suggestedPrice =
+            suggestion?.forecastPrice !== undefined && discount !== null
+              ? suggestion.forecastPrice * (1 - discount / 100)
+              : null;
+
+          return (
+            <section
+              key={key}
+              className="rounded-xl border border-ink/10 p-4"
+            >
+              <h4 className="font-semibold">
+                Item {itemNumber}: {candidate.produce?.label || "Detected produce"}
+              </h4>
+              {suggestion?.forecastPrice !== undefined ? (
+                <>
+                  <p className="mt-2 text-sm text-ink/60">
+                    Matched DA series: {suggestion.product.commodity}
+                    {suggestion.product.specification
+                      ? ` · ${suggestion.product.specification}`
+                      : ""}
+                  </p>
+                  <dl className="mt-3 space-y-1 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-ink/60">1-week forecast</dt>
+                      <dd className="font-medium">
+                        {formatPrice(suggestion.forecastPrice, suggestion.currency)}
+                        {suggestion.product.unit ? ` / ${suggestion.product.unit}` : ""}
+                      </dd>
+                    </div>
+                    {canApplyDiscount ? (
+                      <>
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-ink/60">
+                            {candidate.ripeness.label} discount
+                          </dt>
+                          <dd className="font-medium">{discount}%</dd>
+                        </div>
+                        <div className="flex justify-between gap-3 border-t border-ink/10 pt-2">
+                          <dt className="font-semibold">Suggested price</dt>
+                          <dd className="font-semibold text-green-800">
+                            {formatPrice(suggestedPrice, suggestion.currency)}
+                            {suggestion.product.unit ? ` / ${suggestion.product.unit}` : ""}
+                          </dd>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="border-t border-ink/10 pt-2 text-sm text-ink/60">
+                        {priceDisplayReason(candidate)}
+                      </p>
+                    )}
+                  </dl>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-ink/60">
+                  {suggestion?.error ||
+                    suggestion?.unavailableReason ||
+                    (error
+                      ? "Price suggestion could not be loaded."
+                      : loading
+                        ? "Checking the weekly forecast..."
+                        : "Price suggestion unavailable.")}
+                </p>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+function candidatesForDetection(detection) {
+  return detection.candidates?.length ? detection.candidates : [detection];
+}
+
+function canSuggestPrice(candidate) {
+  return (
+    candidate.freshness?.label === "Fresh" &&
+    candidate.ripeness?.status === "classified" &&
+    discountForRipeness(candidate.ripeness?.label) !== null
+  );
+}
+
+function priceDisplayReason(candidate) {
+  if (candidate.freshness?.label === "Rotten") {
+    return "Forecast shown for reference only; no sale suggestion for an item classified as rotten.";
+  }
+  if (candidate.freshness?.label !== "Fresh") {
+    return "Forecast shown for reference only; discount not applied because freshness is not classified as Fresh.";
+  }
+  return "Forecast shown for reference only; discount not applied because ripeness was not assessed.";
+}
+
+function discountForRipeness(label) {
+  if (label === "Ripe") return 0;
+  if (label === "Unripe") return 10;
+  if (label === "Overripe") return 30;
+  if (label === "Semi-ripe" || label === "Turning") return 20;
+  return null;
+}
+
+function isFruitOrVegetableCategory(category) {
+  return [
+    "CORN",
+    "FRUIT VEGETABLES",
+    "FRUITS",
+    "HIGHLAND VEGETABLES",
+    "LOWLAND VEGETABLES",
+    "LEAFY VEGETABLES",
+  ].includes((category || "").trim().toUpperCase());
+}
+
+function findPriceProduct(label, products) {
+  const names = productNameVariants(label);
+  const matches = products
+    .map((product) => {
+      const commodity = normalizeProductName(product.commodity);
+      const score = Math.max(
+        ...names.map((name) => {
+          if (commodity === name) return 3;
+          if (commodity.startsWith(`${name} `)) return 2;
+          if (` ${commodity} `.includes(` ${name} `)) return 1;
+          return 0;
+        }),
+      );
+      return { product, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        (right.product.record_count || 0) - (left.product.record_count || 0),
+    );
+
+  return matches[0]?.product || null;
+}
+
+function productNameVariants(label) {
+  const names = (label || "")
+    .split(/[()]/)
+    .map(normalizeProductName)
+    .filter(Boolean);
+  const aliases = {
+    "bitter gourd": "ampalaya",
+    "sugar apple": "atis",
+    "star apple": "caimito",
+    soursop: "guyabano",
+    tomato: "kamatis",
+    "water spinach": "kangkong",
+    tamarind: "sampalok",
+    cabbage: "repolyo",
+    chayote: "sayote",
+    "yardlong bean": "sitaw",
+    eggplant: "talong",
+    "bottle gourd": "upo",
+  };
+  return [...new Set(names.flatMap((name) => [name, aliases[name]].filter(Boolean)))];
+}
+
+function normalizeProductName(value) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function formatPrice(value, currency) {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: currency || "PHP",
+  }).format(value);
+}
+
+async function fetchProductForecast(product, apiBase) {
+  try {
+    const response = await fetch(`${apiBase}/api/prices/forecast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seriesKey: product.series_key }),
+    });
+    const data = await response.json();
+    if (!response.ok || data.success !== true || !data.forecast) {
+      throw new Error(data.message || "Could not load the price forecast.");
+    }
+
+    const forecastPrice = Number(data.forecast.forecasts?.["1w"]?.predicted_price);
+    if (!Number.isFinite(forecastPrice) || forecastPrice <= 0) {
+      throw new Error("The 1-week forecast price is unavailable.");
+    }
+
+    return [
+      product.series_key,
+      {
+        product,
+        forecastPrice,
+        currency: data.forecast.currency || product.currency || "PHP",
+      },
+    ];
+  } catch (forecastError) {
+    return [
+      product.series_key,
+      {
+        product,
+        error: forecastError.message || "Could not load the price forecast.",
+      },
+    ];
+  }
 }
 
 function RecipeSupportPanel({ detections }) {

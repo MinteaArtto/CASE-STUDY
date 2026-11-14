@@ -1,5 +1,8 @@
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
+from ml import validate_sampling_data
 from ml.validate_sampling_data import (
     bbox_fits_image,
     percentage_in_range,
@@ -8,6 +11,16 @@ from ml.validate_sampling_data import (
 
 
 class SamplingDataValidationTests(unittest.TestCase):
+    def test_detector_reports_missing_local_cache_without_crashing(self):
+        missing_cache = Path(__file__).parent / ".missing-test-cache"
+        with patch.object(validate_sampling_data, "DETECTOR_DATA_DIR", missing_cache):
+            checks = validate_sampling_data.validate_detector()
+
+        self.assertEqual(len(checks), 1)
+        self.assertEqual(checks[0]["status"], "FAIL")
+        self.assertEqual(checks[0]["check"], "required validation inputs")
+        self.assertIn("dataset summary", checks[0]["details"])
+
     def test_percentage_range_requires_finite_numbers_from_zero_to_one_hundred(self):
         for value in (0, 100, 54.2):
             with self.subTest(value=value):

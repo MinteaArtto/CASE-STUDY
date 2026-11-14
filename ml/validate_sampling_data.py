@@ -125,6 +125,27 @@ def validate_detector():
     dataset = "detector"
     checks = []
     summary_path = DETECTOR_DATA_DIR / "summary.json"
+    image_dir = DETECTOR_DATA_DIR / "test" / "images"
+    label_dir = DETECTOR_DATA_DIR / "test" / "labels"
+    required_inputs = (
+        ("dataset summary", summary_path, summary_path.is_file()),
+        ("detector metrics", DETECTOR_METRICS_PATH, DETECTOR_METRICS_PATH.is_file()),
+        ("test images directory", image_dir, image_dir.is_dir()),
+        ("test labels directory", label_dir, label_dir.is_dir()),
+    )
+    missing_inputs = [
+        f"{name} ({path})" for name, path, exists in required_inputs if not exists
+    ]
+    if missing_inputs:
+        add_check(
+            checks,
+            dataset,
+            "required validation inputs",
+            False,
+            "Missing required detector inputs: " + ", ".join(missing_inputs) + ".",
+        )
+        return checks
+
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     metrics = json.loads(DETECTOR_METRICS_PATH.read_text(encoding="utf-8"))
     classes = summary.get("classes")
@@ -155,8 +176,6 @@ def validate_detector():
         "Dataset class order must match the saved evaluation class IDs.",
     )
 
-    image_dir = DETECTOR_DATA_DIR / "test" / "images"
-    label_dir = DETECTOR_DATA_DIR / "test" / "labels"
     image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
     image_count = sum(
         1 for path in image_dir.glob("*")
