@@ -23,7 +23,11 @@ const healthResponse = (req, res) => {
     message: "Server is running!",
     status: "Online",
     mongodb:
-      mongoose.connection.readyState === 1 ? "Connected" : "Not connected",
+      mongoose.connection.readyState === 1
+        ? "Connected"
+        : process.env.ATLAS_URI || process.env.MONGODB_URI
+          ? "Not connected"
+          : "Not configured",
   });
 };
 app.get("/api/health", healthResponse);
@@ -38,6 +42,15 @@ app.get("*", (req, res, next) => {
 
 // MongoDB Connection Test
 app.get("/api/test-connection", async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      message: process.env.ATLAS_URI || process.env.MONGODB_URI
+        ? "MongoDB is not connected."
+        : "MongoDB is not configured. Set ATLAS_URI to enable this check.",
+    });
+  }
+
   try {
     // Try to ping the database
     await mongoose.connection.db.command({ ping: 1 });
@@ -55,25 +68,29 @@ app.get("/api/test-connection", async (req, res) => {
   }
 });
 
-async function startServer() {
-  const mongoUri = process.env.ATLAS_URI || process.env.MONGODB_URI;
-  if (!mongoUri) {
-    throw new Error(
-      "MongoDB URI is missing. Set ATLAS_URI in Render's environment variables.",
-    );
-  }
-
-  await mongoose.connect(mongoUri);
-  console.log("MongoDB Connected!");
-  console.log("Database: " + mongoose.connection.db.databaseName);
-
+function startServer() {
   app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log(`Test connection: /api/test-connection`);
   });
+
+  const mongoUri = process.env.ATLAS_URI || process.env.MONGODB_URI;
+  if (!mongoUri) {
+    console.warn(
+      "MongoDB URI is not configured; continuing without MongoDB.",
+    );
+    return;
+  }
+
+  mongoose
+    .connect(mongoUri)
+    .then(() => {
+      console.log("MongoDB Connected!");
+      console.log("Database: " + mongoose.connection.db.databaseName);
+    })
+    .catch((error) => {
+      console.error("MongoDB Connection Error:", error.message);
+    });
 }
 
-startServer().catch((error) => {
-  console.error("Application startup failed:", error.message);
-  process.exitCode = 1;
-});
+startServer();
